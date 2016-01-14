@@ -2,41 +2,41 @@
 #include <WS2812.h>	// thanks Matthias Riegler!
 #include <Wire.h>
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------//
-// config pin 5 as  pwm 									START_BYTE, 	CMD_CONFIG, 5, MODE_PWM
-// set all 50%															START_BYTE, 	CMD_SET, 5, 128
+// config pin 5 as  pwm 			START_BYTE, 	CMD_CONFIG, 5, MODE_PWM
+// set all 50%					START_BYTE, 	CMD_SET, 5, 128
 // ---------------------------------------------------------------------------------------------------------------
-// config pin 9 as  5 x same ws2812				START_BYTE, 	CMD_CONFIG, 9, MODE_SINGLE_COLOR_WS2812, 5
-// set all red 															START_BYTE, 	CMD_SET, 9, 0xff, 0x00,0x00
-// set all green														START_BYTE, 	CMD_SET, 9, 0x00, 0xff,0x00
+// config pin 9 as  5 x same ws2812		START_BYTE, 	CMD_CONFIG, 9, MODE_SINGLE_COLOR_WS2812, 5
+// set all red 					START_BYTE, 	CMD_SET, 9, 0xff, 0x00,0x00
+// set all green				START_BYTE, 	CMD_SET, 9, 0x00, 0xff,0x00
 // ---------------------------------------------------------------------------------------------------------------
 // config pin 10 as  3 x unique ws2812 		START_BYTE, 	CMD_CONFIG, 10, MODE_MULTI_COLOR_WS2812, 3
-// set all 1xr,1xg,1xb 											START_BYTE, 	CMD_SET, 10, 	0xff, 0x00,0x00, 		0x00, 0xff,0x00, 		0x00, 0x00,0xff
+// set all 1xr,1xg,1xb 				START_BYTE, 	CMD_SET, 10, 	0xff, 0x00,0x00, 	0x00, 0xff,0x00, 	0x00, 0x00,0xff
 // ---------------------------------------------------------------------------------------------------------------
-// restart, erase config										START_BYTE, 	CMD_RESET
+// restart, erase config			START_BYTE, 	CMD_RESET
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------//
 
 #define START_BYTE		0xCE
-#define CMD_SET 			0xF0
-#define CMD_CONFIG	0xF1
+#define CMD_SET 		0xF0
+#define CMD_CONFIG		0xF1
 #define CMD_READ		0xF2
 #define CMD_RESET		0xF3
 
-#define MODE_PWM												0x01
-#define MODE_INPUT											0x02
-#define MODE_SINGLE_COLOR_WS2812		0x03
+#define MODE_PWM			0x01
+#define MODE_INPUT			0x02
+#define MODE_SINGLE_COLOR_WS2812	0x03
 #define MODE_MULTI_COLOR_WS2812		0x04
-#define MAX_MODE												MODE_MULTI_COLOR_WS2812
+#define MAX_MODE			MODE_MULTI_COLOR_WS2812
 
-#define ST_WAIT 								0xFF
-#define ST_CMD 									0x00
+#define ST_WAIT 			0xFF
+#define ST_CMD 				0x00
 #define ST_CONFIG_CHANNEL		0x01
 #define ST_CONFIG_MODE 			0x02
-#define ST_SET_CHANNEL				0x03
-#define ST_SET_SINGLE_VALUE 	0x04
-#define ST_SET_VALUE_R 				0x05
-#define ST_SET_VALUE_G 				0x06
-#define ST_SET_VALUE_B				0x07
-#define ST_WS2812_NUM				0x08
+#define ST_SET_CHANNEL			0x03
+#define ST_SET_SINGLE_VALUE 		0x04
+#define ST_SET_VALUE_R 			0x05
+#define ST_SET_VALUE_G 			0x06
+#define ST_SET_VALUE_B			0x07
+#define ST_WS2812_NUM			0x08
 
 #define TRANSFER_TIMEOUT 200
 #define I2C_ADDRESS	0x04
@@ -81,11 +81,11 @@ void loop(){
 void(* resetFunc) (void) = 0; 
 
 int shield_to_arduino_pin(uint8_t shield_pin){
-	// channel row 1, left-to-right:	|| 	11(PB3), 		10(PB2),			9(PB1), 			6(PD6), 			5(PD5)		||
-	// channel row 2, left-to-right:	||	 -(ADC7), 	A1/15(PC1), 	A2/16(PC2), 	A3/17(PC3)	,	XXX			||
-	// channel row 3, left-to-right: 	||	0(PD0), 		1(PD1), 			2(PD2), 			3(PD3),				XXX			|| only these are used for up to 4 parallel ws2812 channels
+	// channel row 1, left-to-right:	|| 	11(PB3), 	10(PB2),	9(PB1), 	6(PD6), 	5(PD5)	||
+	// channel row 2, left-to-right:	||	 -(ADC7), 	A1/15(PC1), 	A2/16(PC2), 	A3/17(PC3),	XXX	||
+	// channel row 3, left-to-right: 	||	0(PD0), 	1(PD1), 	2(PD2), 	3(PD3),		XXX	|| only these are used for up to 4 parallel ws2812 channels
 	
-	if(shield_pin==0)				{	return	11;	}	// upper left
+	if(shield_pin==0)	{	return	11;	}	// upper left
 	else if(shield_pin==1)	{	return	10;	}
 	else if(shield_pin==2)	{	return	9;	}
 	else if(shield_pin==3)	{	return	6;	}
@@ -113,7 +113,7 @@ void config_pin(uint8_t pin){
 			pinMode(pin,INPUT);
 		}
 	} else if(m_modes[pin]==MODE_SINGLE_COLOR_WS2812 || m_modes[pin]==MODE_MULTI_COLOR_WS2812){
-		if(pin>=9 && pin<=12){
+		if(pin>=9 && pin<=11){
 			WS2812 *ws2812 = new WS2812(m_ws_count[pin-9]);
 			ws2812->setOutput(shield_to_arduino_pin(pin)); 
 			m_ws2812[pin-9]=ws2812; // save pointer
