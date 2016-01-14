@@ -14,6 +14,9 @@
 #define ST_CHANNEL 	0x01
 #define ST_MODE 	0x02
 #define ST_VALUE 	0x03
+#define ST_VALUE_R 	0x04
+#define ST_VALUE_G 	0x05
+#define ST_VALUE_B	0x06
 #define TRANSFER_TIMEOUT 200
 
 #define NEO_LED_COUNT 30
@@ -21,6 +24,9 @@
 uint8_t  m_state=ST_WAIT;
 uint8_t	 m_channel=0;
 uint8_t	 m_mode=0;
+uint8_t	 m_value_r=0;
+uint8_t	 m_value_g=0;
+uint8_t	 m_value_b=0;
 uint8_t	 m_value=0;
 uint32_t m_lasttransfer=0;
 
@@ -53,13 +59,11 @@ void run(){
 	} else if(m_mode==0x01){ // output pwm
 		analogWrite(m_channel, m_value);
 	} else if(m_mode==0x02){ // neo pixel
-		value.b = m_value; value.g = 0; value.r = 0; // RGB Value -> Blue
+		value.r = m_value_r; 
+		value.g = m_value_g; 
+		value.b = m_value_b; // RGB Value -> Blue
 		for(int i=0; i<NEO_LED_COUNT; i++){
 			LED.set_crgb_at(i, value); // Set value at LED found at index 0
-			uint8_t temp = value.r;
-			value.r = value.g;
-			value.g = value.b;
-			value.b = temp;
 		}
 		LED.sync(); // Sends the value to the LED
 	}
@@ -79,14 +83,28 @@ void receiveEvent(int howMany){
 			m_state=ST_MODE;
 			m_channel = c;
 		} else if(m_state==ST_MODE){
-			Serial.println("3");
-			m_state=ST_VALUE;
+			Serial.println("3");						
 			m_mode = c;
+			if(m_mode==0x02){
+				m_state=ST_VALUE_R;
+			} else {
+				m_state=ST_VALUE;
+			}
+		} else if(m_state==ST_VALUE_R){
+			m_value_r=c;
+			m_state=ST_VALUE_G;
+		} else if(m_state==ST_VALUE_G){
+			m_value_g=c;
+			m_state=ST_VALUE_B;
+		} else if(m_state==ST_VALUE_B){
+			m_value_b=c;
+			m_state=ST_WAIT;
+			run();
 		} else if(m_state==ST_VALUE){
 			Serial.println("4");
 			m_value=c;
 			run();
-			//m_state=ST_WAIT;
+			m_state=ST_WAIT;
 		} else if(c==START_BYTE){
 			Serial.println("1");
 			m_state=ST_CHANNEL;
