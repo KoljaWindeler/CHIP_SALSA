@@ -1,0 +1,2 @@
+sudo avrdude -c avrisp2  -p m328p -V -Uflash:w:/tmp/build4659110460175179037.tmp/atmega328.cpp.hex:a
+sudo avrdude -c avrisp2  -p m328p  -U lfuse:w:0xe2:m  -B 50
