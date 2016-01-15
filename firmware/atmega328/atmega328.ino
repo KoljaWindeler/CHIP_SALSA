@@ -32,16 +32,14 @@
 #define ST_CONFIG_CHANNEL		0x01
 #define ST_CONFIG_MODE 			0x02
 #define ST_SET_CHANNEL			0x03
-#define ST_SET_OFFSET			0x04
-#define ST_SET_SINGLE_VALUE 		0x05
-#define ST_SET_VALUE_R 			0x06
-#define ST_SET_VALUE_G 			0x07
-#define ST_SET_VALUE_B			0x08
-#define ST_WS2812_NUM			0x09
+#define ST_SET_SINGLE_VALUE 		0x04
+#define ST_SET_VALUE_R 			0x05
+#define ST_SET_VALUE_G 			0x06
+#define ST_SET_VALUE_B			0x07
+#define ST_WS2812_NUM			0x08
 
-#define TRANSFER_TIMEOUT 50
+#define TRANSFER_TIMEOUT 200
 #define I2C_ADDRESS	0x04
-
 
 uint8_t  m_state=ST_WAIT;
 uint8_t	 m_channel=0;
@@ -55,8 +53,6 @@ uint8_t m_modes[5+4+4]; // 5+4+4 channels
 uint8_t m_ws_count[4]; //  only lower 4 channels
 WS2812* m_ws2812[4]; //  only lower 4 channels
 cRGB value;
-
-WS2812 LED1(5); // 1 LED
 
 
 // i2c config and init
@@ -76,9 +72,7 @@ void setup(){
 // timeout
 void loop(){
 	delay(TRANSFER_TIMEOUT);
-	if(millis()-m_lasttransfer>TRANSFER_TIMEOUT && m_state!=ST_WAIT){
-		//Serial.print("State was ");
-		//Serial.println(m_state);
+	if(millis()-m_lasttransfer>TRANSFER_TIMEOUT){
 		m_state=ST_WAIT;
 	}
 }
@@ -119,8 +113,6 @@ void config_pin(uint8_t pin){
 			pinMode(pin,INPUT);
 		}
 	} else if(m_modes[pin]==MODE_SINGLE_COLOR_WS2812 || m_modes[pin]==MODE_MULTI_COLOR_WS2812){
-		//Serial.print("ws2812 at pin");
-		//Serial.println(shield_to_arduino_pin(pin));
 		if(pin>=9 && pin<=11){
 			WS2812 *ws2812 = new WS2812(m_ws_count[pin-9]);
 			ws2812->setOutput(shield_to_arduino_pin(pin)); 
@@ -143,11 +135,7 @@ void set_value(){
 		value.g = m_value_g; 
 		value.b = m_value_b; // RGB Value -> Blue
 		// 
-		//if(m_ws2812[m_channel-9] == 0){
-		//	Serial.println("Array error");
-		//}
 		if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812){
-			
 			for(int i=0; i<m_ws_count[m_channel-9]; i++){
 				m_ws2812[m_channel-9]->set_crgb_at(i, value); // Set value at all LEDs
 			}
@@ -187,10 +175,8 @@ void receiveEvent(int howMany){
 			} else {
 				if(m_modes[m_channel]==MODE_PWM){	
 					m_state=ST_SET_SINGLE_VALUE;	
-				} else if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812){
+				} else if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812 || m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){	
 					m_state=ST_SET_VALUE_R;
-				} else if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){
-					m_state=ST_SET_OFFSET;
 				}
 			}
 		} 
@@ -209,16 +195,13 @@ void receiveEvent(int howMany){
 				m_state=ST_WAIT;
 			}
 		} else if(m_state==ST_WS2812_NUM){
-			m_ws_count[m_channel-9]=c;
+			m_ws_count[m_channel]=c;
 			m_state=ST_WAIT;
 			config_pin(m_channel);
 		}
 		//############# setup ###############	
 		//############ set value #############
-		else if(m_state==ST_SET_OFFSET){
-			m_current_led=c;
-			m_state=ST_SET_VALUE_R;
-		} else if(m_state==ST_SET_SINGLE_VALUE){		// pwm
+		else if(m_state==ST_SET_SINGLE_VALUE){		// pwm
 			m_value=c;
 			m_state=ST_WAIT;
 			set_value();
@@ -232,7 +215,7 @@ void receiveEvent(int howMany){
 			m_value_b=c;
 			set_value();	
 			if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){ 	// maybe we have to go back to red
-				if(m_current_led>=m_ws_count[m_channel-9] || m_current_led%8==0){ // set_value sets m_current_led++
+				if(m_current_led>=m_ws_count[m_channel-9]){ 					// set_value sets m_current_led++
 					m_state=ST_WAIT; // done
 				} else {
 					m_state=ST_SET_VALUE_R; // resume

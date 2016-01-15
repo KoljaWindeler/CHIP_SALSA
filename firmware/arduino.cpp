@@ -1,4 +1,4 @@
-#include </home/kolja/projects/CHIP_pwm_shield/atmega328/WS2812.h>	// thanks Matthias Riegler!
+#include </home/kolja/projects/CHIP_pwm_shield/firmware/atmega328/WS2812.h>	// thanks Matthias Riegler!
 //#include <WS2812.h>	// thanks Matthias Riegler!
 #include <Wire.h>
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------//
@@ -113,7 +113,7 @@ int shield_to_arduino_pin(uint8_t shield_pin){
 // setup - on-the-fly
 void config_pin(uint8_t pin){
 	if(m_modes[pin]==MODE_PWM){
-		pinMode(pin,OUTPUT);
+		pinMode(shield_to_arduino_pin(pin),OUTPUT);
 	} else if(m_modes[pin]==MODE_INPUT){
 		if(pin>=6 && pin<=8){
 			pinMode(pin,INPUT);
@@ -133,7 +133,7 @@ void config_pin(uint8_t pin){
 void set_value(){
 	// pwm
 	if(m_modes[m_channel]==MODE_PWM){ // output digital
-		digitalWrite(m_channel,m_value);
+		digitalWrite(shield_to_arduino_pin(m_channel),m_value);
 	}	// pwm end 
 	
 	// ws2812
