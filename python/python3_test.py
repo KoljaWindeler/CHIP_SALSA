@@ -19,11 +19,11 @@ bus = i2c.I2CMaster(1)
 
 #######################################################################################################
 # setup pin 4 as pwm output, we don't care about color here, just set it to 80/256 dutycycle
-bus.transaction(i2c.writing_bytes(address, START_BYTE, CMD_CONFIG, 0, MODE_PWM))
-for ii in range(0,256):
-	bus.transaction(i2c.writing_bytes(address, START_BYTE, CMD_SET, 0, ii))
-	print("dimming on at "+str(ii))
-	time.sleep(0.5)
+#bus.transaction(i2c.writing_bytes(address, START_BYTE, CMD_CONFIG, 0, MODE_PWM))
+#for ii in range(0,256):
+#	bus.transaction(i2c.writing_bytes(address, START_BYTE, CMD_SET, 0, ii))
+#	print("dimming on at "+str(ii))
+#	time.sleep(0.5)
 #######################################################################################################
 
 #######################################################################################################
