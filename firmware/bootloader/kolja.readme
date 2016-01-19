@@ -1,0 +1,2 @@
+make atmega328
+sudo avrdude -c avrisp2 -p m328p -s -Uflash:w:optiboot_atmega328.hex:a 
