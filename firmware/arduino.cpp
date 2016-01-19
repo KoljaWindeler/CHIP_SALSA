@@ -61,16 +61,16 @@ WS2812 LED1(5); // 1 LED
 
 // i2c config and init
 void setup(){
-	Wire.begin(I2C_ADDRESS);                // join i2c bus with address #4
-	Wire.onReceive(receiveEvent); // register event
+	//Wire.begin(I2C_ADDRESS);                // join i2c bus with address #4
+	//Wire.onReceive(receiveEvent); // register event
 	for(int i=0; i<13; i++){
 		m_modes[i]=0xff; // invalid
 	}
 	for(int i=0; i<4; i++){
 		m_ws_count[i]=0;
 	}
-	//Serial.begin(19200);
-	//Serial.println("Hi");
+	Serial.begin(19200);
+	Serial.println("Hwoop woop");
 }
 
 // timeout

@@ -1,2 +1,34 @@
-sudo avrdude -c avrisp2  -p m328p -V -Uflash:w:/tmp/build4659110460175179037.tmp/atmega328.cpp.hex:a
-sudo avrdude -c avrisp2  -p m328p  -U lfuse:w:0xe2:m  -B 50
+#### Setup of new Controller
+sudo avrdude -c avrisp2 -p m328p -U lfuse:w:0xe2:m  -B 50						# set fuse for slow avr
+sudo avrdude -c avrisp2 -p m328p -U lfuse:w:0xe2:m -U hfuse:w:0xda:m -B 1				# with bootloader
+sudo avrdude -c avrisp2 -p m328p -U lfuse:r:-:i -v							# read fuse
+cd bootloader
+make atmega328
+sudo avrdude -c avrisp2 -p m328p -s -Uflash:w:optiboot_atmega328.hex:a 					# flash bootloader
+
+
+### using only MK2, without bootloader
+#sudo avrdude -c avrisp2 -p m328p -U lfuse:w:0xe2:m -U hfuse:w:0xdb:m -B 1				# without bootloader
+#sudo avrdude -c avrisp2 -p m328p -s -Uflash:w:/tmp/build4659110460175179037.tmp/atmega328.cpp.hex:a	# flash without bootloader
+
+## flash arduini hex files with bootloader (this is what the Arduino IDE does)
+#sudo avrdude -cstk500v1 -p m328p -s -P /dev/ttyUSB0 -b19200 -Uflash:w:/tmp/build4842821915368229375.tmp/atmega328.cpp.hex:a -F 
+
+
+#This has to be added to the /usr/share/arduino/hardware/arduino/boards.txt to show the Board in the IDE
+
+atmega328o.name=[Optiboot] C.H.I.P. shield w/ ATmega328
+atmega328o.upload.protocol=arduino
+atmega328o.upload.maximum_size=32256
+atmega328o.upload.speed=19200 -F
+atmega328o.bootloader.low_fuses=0xe2
+atmega328o.bootloader.high_fuses=0xda
+atmega328o.bootloader.extended_fuses=0x05
+atmega328o.bootloader.path=optiboot
+atmega328o.bootloader.file=optiboot_atmega328.hex
+atmega328o.bootloader.unlock_bits=0x3F
+atmega328o.bootloader.lock_bits=0x0F
+atmega328o.build.mcu=atmega328p
+atmega328o.build.f_cpu=8000000L
+atmega328o.build.core=arduino:arduino
+atmega328o.build.variant=arduino:standard

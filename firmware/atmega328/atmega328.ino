@@ -1,4 +1,4 @@
-#include </home/kolja/projects/CHIP_pwm_shield/atmega328/WS2812.h>	// thanks Matthias Riegler!
+#include </home/kolja/projects/CHIP_pwm_shield/firmware/atmega328/WS2812.h>	// thanks Matthias Riegler!
 //#include <WS2812.h>	// thanks Matthias Riegler!
 #include <Wire.h>
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------//
@@ -32,14 +32,16 @@
 #define ST_CONFIG_CHANNEL		0x01
 #define ST_CONFIG_MODE 			0x02
 #define ST_SET_CHANNEL			0x03
-#define ST_SET_SINGLE_VALUE 		0x04
-#define ST_SET_VALUE_R 			0x05
-#define ST_SET_VALUE_G 			0x06
-#define ST_SET_VALUE_B			0x07
-#define ST_WS2812_NUM			0x08
+#define ST_SET_OFFSET			0x04
+#define ST_SET_SINGLE_VALUE 		0x05
+#define ST_SET_VALUE_R 			0x06
+#define ST_SET_VALUE_G 			0x07
+#define ST_SET_VALUE_B			0x08
+#define ST_WS2812_NUM			0x09
 
-#define TRANSFER_TIMEOUT 200
+#define TRANSFER_TIMEOUT 50
 #define I2C_ADDRESS	0x04
+
 
 uint8_t  m_state=ST_WAIT;
 uint8_t	 m_channel=0;
@@ -54,25 +56,29 @@ uint8_t m_ws_count[4]; //  only lower 4 channels
 WS2812* m_ws2812[4]; //  only lower 4 channels
 cRGB value;
 
+WS2812 LED1(5); // 1 LED
+
 
 // i2c config and init
 void setup(){
-	Wire.begin(I2C_ADDRESS);                // join i2c bus with address #4
-	Wire.onReceive(receiveEvent); // register event
+	//Wire.begin(I2C_ADDRESS);                // join i2c bus with address #4
+	//Wire.onReceive(receiveEvent); // register event
 	for(int i=0; i<13; i++){
 		m_modes[i]=0xff; // invalid
 	}
 	for(int i=0; i<4; i++){
 		m_ws_count[i]=0;
 	}
-	//Serial.begin(19200);
-	//Serial.println("Hi");
+	Serial.begin(19200);
+	Serial.println("Hi du");
 }
 
 // timeout
 void loop(){
 	delay(TRANSFER_TIMEOUT);
-	if(millis()-m_lasttransfer>TRANSFER_TIMEOUT){
+	if(millis()-m_lasttransfer>TRANSFER_TIMEOUT && m_state!=ST_WAIT){
+		//Serial.print("State was ");
+		//Serial.println(m_state);
 		m_state=ST_WAIT;
 	}
 }
@@ -107,12 +113,14 @@ int shield_to_arduino_pin(uint8_t shield_pin){
 // setup - on-the-fly
 void config_pin(uint8_t pin){
 	if(m_modes[pin]==MODE_PWM){
-		pinMode(pin,OUTPUT);
+		pinMode(shield_to_arduino_pin(pin),OUTPUT);
 	} else if(m_modes[pin]==MODE_INPUT){
 		if(pin>=6 && pin<=8){
 			pinMode(pin,INPUT);
 		}
 	} else if(m_modes[pin]==MODE_SINGLE_COLOR_WS2812 || m_modes[pin]==MODE_MULTI_COLOR_WS2812){
+		//Serial.print("ws2812 at pin");
+		//Serial.println(shield_to_arduino_pin(pin));
 		if(pin>=9 && pin<=11){
 			WS2812 *ws2812 = new WS2812(m_ws_count[pin-9]);
 			ws2812->setOutput(shield_to_arduino_pin(pin)); 
@@ -125,7 +133,7 @@ void config_pin(uint8_t pin){
 void set_value(){
 	// pwm
 	if(m_modes[m_channel]==MODE_PWM){ // output digital
-		digitalWrite(m_channel,m_value);
+		digitalWrite(shield_to_arduino_pin(m_channel),m_value);
 	}	// pwm end 
 	
 	// ws2812
@@ -135,7 +143,11 @@ void set_value(){
 		value.g = m_value_g; 
 		value.b = m_value_b; // RGB Value -> Blue
 		// 
+		//if(m_ws2812[m_channel-9] == 0){
+		//	Serial.println("Array error");
+		//}
 		if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812){
+			
 			for(int i=0; i<m_ws_count[m_channel-9]; i++){
 				m_ws2812[m_channel-9]->set_crgb_at(i, value); // Set value at all LEDs
 			}
@@ -175,8 +187,10 @@ void receiveEvent(int howMany){
 			} else {
 				if(m_modes[m_channel]==MODE_PWM){	
 					m_state=ST_SET_SINGLE_VALUE;	
-				} else if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812 || m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){	
+				} else if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812){
 					m_state=ST_SET_VALUE_R;
+				} else if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){
+					m_state=ST_SET_OFFSET;
 				}
 			}
 		} 
@@ -195,13 +209,16 @@ void receiveEvent(int howMany){
 				m_state=ST_WAIT;
 			}
 		} else if(m_state==ST_WS2812_NUM){
-			m_ws_count[m_channel]=c;
+			m_ws_count[m_channel-9]=c;
 			m_state=ST_WAIT;
 			config_pin(m_channel);
 		}
 		//############# setup ###############	
 		//############ set value #############
-		else if(m_state==ST_SET_SINGLE_VALUE){		// pwm
+		else if(m_state==ST_SET_OFFSET){
+			m_current_led=c;
+			m_state=ST_SET_VALUE_R;
+		} else if(m_state==ST_SET_SINGLE_VALUE){		// pwm
 			m_value=c;
 			m_state=ST_WAIT;
 			set_value();
@@ -215,7 +232,7 @@ void receiveEvent(int howMany){
 			m_value_b=c;
 			set_value();	
 			if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){ 	// maybe we have to go back to red
-				if(m_current_led>=m_ws_count[m_channel-9]){ 					// set_value sets m_current_led++
+				if(m_current_led>=m_ws_count[m_channel-9] || m_current_led%8==0){ // set_value sets m_current_led++
 					m_state=ST_WAIT; // done
 				} else {
 					m_state=ST_SET_VALUE_R; // resume
