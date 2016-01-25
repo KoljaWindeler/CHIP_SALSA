@@ -1,0 +1,6 @@
+aptitude update
+aptitude install python3-dev git python3-setuptools
+cd /tmp/
+git clong https://github.com/quick2wire/quick2wire-python-api.git
+cd quick2wire-python-api
+python3 setup.py install
