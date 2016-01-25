@@ -42,6 +42,8 @@
 #define TRANSFER_TIMEOUT 50
 #define I2C_ADDRESS	0x04
 
+//#define DEBUG
+
 
 uint8_t  m_state=ST_WAIT;
 uint8_t	 m_channel=0;
@@ -61,16 +63,19 @@ WS2812 LED1(5); // 1 LED
 
 // i2c config and init
 void setup(){
-	//Wire.begin(I2C_ADDRESS);                // join i2c bus with address #4
-	//Wire.onReceive(receiveEvent); // register event
+	Wire.begin(I2C_ADDRESS);                // join i2c bus with address #4
+	Wire.onReceive(receiveEvent); // register event
 	for(int i=0; i<13; i++){
 		m_modes[i]=0xff; // invalid
 	}
 	for(int i=0; i<4; i++){
 		m_ws_count[i]=0;
 	}
+
+#ifdef DEBUG
 	Serial.begin(19200);
-	Serial.println("Hi du");
+	Serial.println("Hwoop woop");
+#endif
 }
 
 // timeout
@@ -119,9 +124,12 @@ void config_pin(uint8_t pin){
 			pinMode(pin,INPUT);
 		}
 	} else if(m_modes[pin]==MODE_SINGLE_COLOR_WS2812 || m_modes[pin]==MODE_MULTI_COLOR_WS2812){
-		//Serial.print("ws2812 at pin");
-		//Serial.println(shield_to_arduino_pin(pin));
 		if(pin>=9 && pin<=11){
+#ifdef DEBUG
+			Serial.print("ws2812 at pin");
+			Serial.println(shield_to_arduino_pin(pin));
+#endif
+
 			WS2812 *ws2812 = new WS2812(m_ws_count[pin-9]);
 			ws2812->setOutput(shield_to_arduino_pin(pin)); 
 			m_ws2812[pin-9]=ws2812; // save pointer
@@ -147,7 +155,12 @@ void set_value(){
 		//	Serial.println("Array error");
 		//}
 		if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812){
-			
+#ifdef DEBUG
+			Serial.print("single color for ");			
+			Serial.print(m_ws_count[m_channel-9]);
+			Serial.println(" leds");
+#endif
+
 			for(int i=0; i<m_ws_count[m_channel-9]; i++){
 				m_ws2812[m_channel-9]->set_crgb_at(i, value); // Set value at all LEDs
 			}
