@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="6.5.0">
+<eagle version="7.5.0">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -8535,12 +8535,13 @@ W = angled&lt;p&gt;
 <part name="P+7" library="supply1" deviceset="VCC" device=""/>
 <part name="P+8" library="supply1" deviceset="VCC" device=""/>
 <part name="GND9" library="supply1" deviceset="GND" device=""/>
-<part name="SJ1" library="jumper" deviceset="SJ" device=""/>
 <part name="GND1" library="supply1" deviceset="GND" device=""/>
 <part name="PAD8" library="wirepad" deviceset="SMD5" device=""/>
 <part name="PAD12" library="wirepad" deviceset="SMD5" device=""/>
 <part name="PAD13" library="wirepad" deviceset="SMD2" device=""/>
 <part name="R2" library="rcl" deviceset="R-EU_" device="M1206"/>
+<part name="SJ2" library="jumper" deviceset="SJ" device=""/>
+<part name="P+2" library="supply1" deviceset="VCC" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -8590,12 +8591,13 @@ W = angled&lt;p&gt;
 <instance part="P+7" gate="VCC" x="297.18" y="83.82"/>
 <instance part="P+8" gate="VCC" x="370.84" y="101.6"/>
 <instance part="GND9" gate="1" x="312.42" y="78.74"/>
-<instance part="SJ1" gate="1" x="353.06" y="93.98"/>
 <instance part="GND1" gate="1" x="363.22" y="53.34"/>
 <instance part="PAD8" gate="1" x="99.06" y="73.66"/>
 <instance part="PAD12" gate="1" x="99.06" y="71.12"/>
 <instance part="PAD13" gate="1" x="71.12" y="60.96"/>
 <instance part="R2" gate="G$1" x="71.12" y="-2.54" rot="R180"/>
+<instance part="SJ2" gate="1" x="353.06" y="111.76"/>
+<instance part="P+2" gate="VCC" x="370.84" y="119.38"/>
 </instances>
 <busses>
 </busses>
@@ -8770,6 +8772,12 @@ W = angled&lt;p&gt;
 <label x="370.84" y="91.44" size="1.778" layer="95" rot="R90"/>
 <pinref part="SJ3" gate="1" pin="2"/>
 <pinref part="P+8" gate="VCC" pin="VCC"/>
+</segment>
+<segment>
+<pinref part="SJ2" gate="1" pin="2"/>
+<wire x1="358.14" y1="111.76" x2="370.84" y2="111.76" width="0.1524" layer="91"/>
+<wire x1="370.84" y1="111.76" x2="370.84" y2="116.84" width="0.1524" layer="91"/>
+<pinref part="P+2" gate="VCC" pin="VCC"/>
 </segment>
 </net>
 <net name="OC0_PWM1" class="0">
@@ -8965,11 +8973,9 @@ W = angled&lt;p&gt;
 <label x="-48.26" y="86.36" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="SJ1" gate="1" pin="2"/>
-<wire x1="358.14" y1="93.98" x2="360.68" y2="93.98" width="0.1524" layer="91"/>
-<wire x1="360.68" y1="93.98" x2="360.68" y2="101.6" width="0.1524" layer="91"/>
-<wire x1="360.68" y1="101.6" x2="345.44" y2="101.6" width="0.1524" layer="91"/>
-<label x="347.98" y="101.6" size="1.778" layer="95"/>
+<pinref part="SJ2" gate="1" pin="1"/>
+<wire x1="347.98" y1="111.76" x2="335.28" y2="111.76" width="0.1524" layer="91"/>
+<label x="337.82" y="111.76" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="_5V" class="0">
@@ -9006,12 +9012,7 @@ W = angled&lt;p&gt;
 <label x="355.6" y="83.82" size="1.778" layer="95" rot="R180"/>
 <pinref part="SJ3" gate="1" pin="1"/>
 <pinref part="SV3" gate="G$1" pin="36"/>
-<wire x1="342.9" y1="83.82" x2="345.44" y2="83.82" width="0.1524" layer="91"/>
-<wire x1="345.44" y1="83.82" x2="358.14" y2="83.82" width="0.1524" layer="91"/>
-<wire x1="345.44" y1="83.82" x2="345.44" y2="93.98" width="0.1524" layer="91"/>
-<pinref part="SJ1" gate="1" pin="1"/>
-<wire x1="345.44" y1="93.98" x2="347.98" y2="93.98" width="0.1524" layer="91"/>
-<junction x="345.44" y="83.82"/>
+<wire x1="342.9" y1="83.82" x2="358.14" y2="83.82" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="INT1" class="0">
