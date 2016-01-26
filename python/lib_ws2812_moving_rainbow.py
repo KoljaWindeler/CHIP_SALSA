@@ -1,4 +1,5 @@
 import arduino_bridge
+import time
 
 # set pin 11 as 20 ws2812, all with unique colors
 LC=18
@@ -32,7 +33,7 @@ for ii in range(0,ROUNDS):
 		temp = colorArray[0]
 		for i in range(0,len(colorArray)-1):
 			colorArray[i]=colorArray[i+1]
-		colorArray[len(colorArray-2)]=temp
+		colorArray[len(colorArray)-2]=temp
 		
 		# wait a little
 		time.sleep(DELAY)
