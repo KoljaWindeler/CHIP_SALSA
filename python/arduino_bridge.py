@@ -36,31 +36,35 @@ class connection:
 	MODE_DIGITAL_OUTPUT      			= 0x06
 
 	
-#######################################################################################################
+######################################## constructor ##################################################
 	def __init__(self, bus="", address="", warnings=1):
 		if(bus==""):	
 			# create connection
 			self.bus = i2c.I2CMaster(1)
+		else:
+			self.bus = bus
 		if(address==""):
 			self.address = 0x04
+		else:
+			self.address = address
 		self.warnings=warnings
 		self.reset_config() # reset controller and vars
-#######################################################################################################
+################################# prepare configuration and reset controller ##########################
 	def reset_config(self):
 		# reset avr and give some time for reboot
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_RESET))
 		time.sleep(1)
 		self.modes = [None] * 13
 		self.ws2812count = [0] * 13
-#######################################################################################################
+		return 0
+################################# print warnings ######################################################
 	def warn(self,text):
 		if(self.warnings):
 			print("Arduino bridge warning: "+text)
 #######################################################################################################
 ######################################## SETUP #########################################################
-#######################################################################################################
+################################### digital output ####################################################
 	def setup_digital_output(self,pin):
-		# only pins 4,6,7
 		if(pin!=4 and pin<6 and pin>10):
 			self.warn("Digital output only supported on pins 4, 6-10")
 			return -1
@@ -68,17 +72,17 @@ class connection:
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_DIGITAL_OUTPUT))	
 		self.modes[pin]=self.MODE_DIGITAL_OUTPUT
 		return 0
-#######################################################################################################
+################################### pwm output ########################################################
 	def setup_pwm_output(self,pin):
 		# only pins 0-3
-		if(pin>4):#TODO
+		if(pin>4):#TODO new board will have 0-3, old has 1-4
 			self.warn("PWM output only supported on pins 0,1,2,3")
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_PWM))	
 		self.modes[pin]=self.MODE_PWM
 		return 0
-#######################################################################################################
+################################## ws2812 control #####################################################
 	def setup_ws2812_common_color_output(self,pin,count):
 		return self.setup_ws2812_output(pin,count,self.MODE_SINGLE_COLOR_WS2812)
 	def setup_ws2812_unique_color_output(self,pin,count,mode=MODE_SINGLE_COLOR_WS2812):
@@ -91,14 +95,14 @@ class connection:
 		if(mode!=self.MODE_SINGLE_COLOR_WS2812 and mode!=self.MODE_MULTI_COLOR_WS2812):
 			self.warn("invalid mode for ws2812 output")
 			return -1
-		if(count<0):
+		if(count<=0):
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG,  pin, mode, count))
 		self.modes[pin]=mode
 		self.ws2812count[pin]=count
 		return 0
-#######################################################################################################
+######################################## digital input ################################################
 	def setup_digital_input(self,pin):
 		# only pins 4,6,7
 		if(pin!=4 and pin<6 and pin>10):
@@ -108,7 +112,7 @@ class connection:
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_DIGITAL_INPUT))	
 		self.modes[pin]=self.MODE_DIGITAL_INPUT
 		return 0
-#######################################################################################################
+######################################### analog input ################################################
 	def setup_analog_input(self,pin):
 		# only pins 4
 		if(pin!=4 and pin!=8 and pin!=9):
@@ -125,7 +129,7 @@ class connection:
 
 #######################################################################################################
 ######################################## USAGE ########################################################
-#######################################################################################################
+####################################### set pin high or low ##############################################
 	def digitalWrite(self,pin,value):
 		if(self.modes[pin]!=self.MODE_PWM and self.modes[pin]!=self.MODE_ANALOG_INPUT and self.modes[pin]!=self.MODE_DIGITAL_OUTPUT):
 			self.warn("pin "+str(pin)+" not configured for digital output, pwm output or analog input")
@@ -141,7 +145,7 @@ class connection:
 		else:
 			self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_SET, pin, value))
 		return 0
-#######################################################################################################
+##################################### write analog value ##############################################
 	def analogWrite(self,pin,value):
 		return self.setPWM(pin,value)
 	def setPWM(self,pin,value):
@@ -154,7 +158,7 @@ class connection:
 			return -1
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_SET, pin, value))
 		return 0
-#######################################################################################################
+##################################### read digital value ##############################################
 	def digitalRead(self,pin):
 		if(self.modes[pin]!=self.MODE_DIGITAL_INPUT and self.modes[pin]!=self.MODE_ANALOG_INPUT ):
 			self.warn("pin "+str(pin)+" not configured for digital input")
@@ -163,15 +167,13 @@ class connection:
 		if(self.modes[pin]==self.MODE_DIGITAL_INPUT):
 			return self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE,self.CMD_GET,pin), i2c.reading(self.address, 1))[0][0]
 		else:
-			analog_high, analog_low = self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE,self.CMD_GET,pin), i2c.reading(self.address, 2))[0]
-			analog_value = analog_high<<8 | analog_low;
-			if(analog_value>100): # >0.5V
+			if(analogRead(pin,avoid_mode_warning=1)>100): # >0.5V
 				return 1
 			else:
 				return 0
-#######################################################################################################
-	def analogRead(self,pin):
-		if(self.modes[pin]!=self.MODE_ANALOG_INPUT ):
+#################################### read analog value ################################################
+	def analogRead(self, pin, avoid_mode_warning=0):
+		if(self.modes[pin]!=self.MODE_ANALOG_INPUT and avoid_mode_warning==0):
 			self.warn("pin "+str(pin)+" not configured for analog input")
 			self.warn("Please configure the pin accordingly")
 			return -1
@@ -179,7 +181,7 @@ class connection:
 		analog_high, analog_low = self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE,self.CMD_GET,pin), i2c.reading(self.address, 2))[0]
 		analog_value = analog_high<<8 | analog_low;
 		return analog_value
-#######################################################################################################
+################################### set ws2812 value ##################################################
 	def ws2812set(self,pin,colors):
 		if(self.modes[pin]!=self.MODE_MULTI_COLOR_WS2812 and self.modes[pin]!=self.MODE_SINGLE_COLOR_WS2812):
 			self.warn("pin "+str(pin)+" not configured for ws2812 output")
