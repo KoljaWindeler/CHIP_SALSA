@@ -18,7 +18,7 @@
 #define START_BYTE		0xCE
 #define CMD_SET 		0xF0
 #define CMD_CONFIG		0xF1
-#define CMD_READ		0xF2
+#define CMD_GET			0xF2
 #define CMD_RESET		0xF3
 
 #define MODE_PWM			0x01
@@ -44,7 +44,7 @@
 #define TRANSFER_TIMEOUT 50
 #define I2C_ADDRESS	0x04
 
-//#define DEBUG
+#define DEBUG
 
 
 uint8_t  m_state=ST_WAIT;
@@ -76,7 +76,7 @@ void setup(){
 
 #ifdef DEBUG
 	Serial.begin(19200);
-	Serial.println("Hwoop woop");
+	Serial.println("woop woop");
 #endif
 }
 
@@ -120,6 +120,10 @@ int shield_to_arduino_pin(uint8_t shield_pin){
 // setup - on-the-fly
 void config_pin(uint8_t pin){
 	if(m_modes[pin]==MODE_PWM){
+#ifdef DEBUG
+		Serial.print("PWM at pin ");
+		Serial.println(shield_to_arduino_pin(pin));
+#endif
 		pinMode(shield_to_arduino_pin(pin),OUTPUT);
 	} else if(m_modes[pin]==MODE_ANALOG_INPUT){
 		if(pin>=6 && pin<=8){
@@ -130,7 +134,7 @@ void config_pin(uint8_t pin){
 	} else if(m_modes[pin]==MODE_SINGLE_COLOR_WS2812 || m_modes[pin]==MODE_MULTI_COLOR_WS2812){
 		if(pin>=9 && pin<=11){
 #ifdef DEBUG
-			Serial.print("ws2812 at pin");
+			Serial.print("ws2812 at pin ");
 			Serial.println(shield_to_arduino_pin(pin));
 #endif
 
@@ -157,7 +161,14 @@ void get_value(){
 void set_value(){
 	// pwm
 	if(m_modes[m_channel]==MODE_PWM){ // output digital
-		digitalWrite(shield_to_arduino_pin(m_channel),m_value);
+#ifdef DEBUG
+		Serial.print("dutycycle of ");
+		Serial.print(m_value);
+		Serial.print(" at pin ");
+		Serial.print(shield_to_arduino_pin(m_channel));
+
+#endif
+		analogWrite(shield_to_arduino_pin(m_channel),m_value);
 	}	// pwm end 
 	
 	// ws2812
