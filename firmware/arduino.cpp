@@ -63,7 +63,7 @@ void setup(){
 	}
 
 #ifdef DEBUG
-	Serial.begin(19200);
+	Serial.begin(9600);
 	Serial.println("woop woop");
 #endif
 }
@@ -111,6 +111,8 @@ void config_pin(uint8_t pin){
 	if(m_modes[pin]==MODE_PWM){
 #ifdef DEBUG
 		Serial.print("PWM at pin ");
+		Serial.print(pin);
+		Serial.print(" that is ");
 		Serial.println(shield_to_arduino_pin(pin));
 #endif
 		pinMode(shield_to_arduino_pin(pin),OUTPUT);
@@ -120,6 +122,8 @@ void config_pin(uint8_t pin){
 		}
 	} else if(m_modes[pin]==MODE_DIGITAL_INPUT){
 		pinMode(pin,INPUT);
+	} else if(m_modes[pin]==MODE_DIGITAL_OUTPUT){
+		pinMode(pin,OUTPUT);
 	} else if(m_modes[pin]==MODE_SINGLE_COLOR_WS2812 || m_modes[pin]==MODE_MULTI_COLOR_WS2812){
 		if(pin>=9 && pin<=11){
 #ifdef DEBUG
@@ -163,6 +167,11 @@ void set_value(){
 #endif
 		analogWrite(shield_to_arduino_pin(m_channel),m_value);
 	}	// pwm end 
+
+	// digital write
+	else if(m_modes[m_channel]==MODE_DIGITAL_OUTPUT){
+		digitalWrite(shield_to_arduino_pin(m_channel),m_value);
+	}
 	
 	// ws2812
 	else if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812 || m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){ // output pixel
@@ -221,6 +230,8 @@ void receiveEvent(int howMany){
 				// SET a channel  (outputs)
 				if(m_modes[m_channel]==MODE_PWM){	
 					m_state=ST_SET_SINGLE_VALUE;	
+				} else if(m_modes[m_channel]==MODE_DIGITAL_OUTPUT){
+					m_state=ST_SET_SINGLE_VALUE;
 				} else if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812){
 					m_state=ST_SET_VALUE_R;
 				} else if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){
