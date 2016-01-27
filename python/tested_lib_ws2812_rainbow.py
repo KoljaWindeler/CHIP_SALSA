@@ -4,7 +4,7 @@ import arduino_bridge
 # set pin 11 as 20 ws2812, all with unique colors
 ledcount=18
 rounds=10
-delay=0.02
+delay=0.03
 pin = 11
 
 arduino = arduino_bridge.connection()
