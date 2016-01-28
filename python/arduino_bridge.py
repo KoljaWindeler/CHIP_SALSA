@@ -5,11 +5,11 @@ except:
 	print("Could not load the quickwire i2c lib, stopping")
 	exit(0)
 
-# upper line:			 5V,  		0 PWM,				1 PWM,					2 PWM,							3 PWM,							GND
-# lower line			5V,  		4 ADC,digital,	5 CHIP pinP7,		6 digital, ws2812,		7 digital, ws2812,		GND
-# small smd pad  top next to avr:				Pin 8, digital, ws2812
-# big smd pad  top next to terminal: 			Pin 9, digital, ws2812
-# big smd pad  bottom next to terminal: 	Pin10, digital, ws2812
+# upper line:		5V,	0 PWM,		1 PWM,		2 PWM,			3 PWM,			GND
+# lower line		5V,	4 ADC,digital,	5 CHIP pinP7,	6 digital, ws2812,	7 digital, ws2812,	GND
+# small smd pad  top next to avr:	Pin 8, digital, ws2812
+# big smd pad  top next to terminal: 	Pin 9, digital, ws2812
+# big smd pad  bottom next to terminal: Pin10, digital, ws2812
 #######################################################################################################
 #######################################################################################################
 class Color:
@@ -22,19 +22,20 @@ class Color:
 	
 class connection:
 	# some constants
-	START_BYTE 		= 0xCE
-	CMD_SET  			= 0xF0
+	START_BYTE 	= 0xCE
+	CMD_SET  	= 0xF0
 	CMD_CONFIG	= 0xF1
-	CMD_GET			= 0xF2
-	CMD_RESET		= 0xF3
+	CMD_GET		= 0xF2
+	CMD_RESET	= 0xF3
 
-	MODE_PWM									= 0x01
-	MODE_ANALOG_INPUT	 				= 0x02
-	MODE_SINGLE_COLOR_WS2812	= 0x03
+	MODE_PWM		= 0x01
+	MODE_ANALOG_INPUT	= 0x02
+	MODE_SINGLE_COLOR_WS2812= 0x03
 	MODE_MULTI_COLOR_WS2812	= 0x04
-	MODE_DIGITAL_INPUT	 				= 0x05
-	MODE_DIGITAL_OUTPUT      			= 0x06
-
+	MODE_DIGITAL_INPUT	= 0x05
+	MODE_DIGITAL_OUTPUT     = 0x06
+	
+	delay = 0.001
 	
 ######################################## constructor ##################################################
 	def __init__(self, bus="", address="", warnings=1):
@@ -70,6 +71,7 @@ class connection:
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_DIGITAL_OUTPUT))	
+		time.sleep(self.delay)
 		self.modes[pin]=self.MODE_DIGITAL_OUTPUT
 		return 0
 ################################### pwm output ########################################################
@@ -80,6 +82,7 @@ class connection:
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_PWM))	
+		time.sleep(self.delay)
 		self.modes[pin]=self.MODE_PWM
 		return 0
 ################################## ws2812 control #####################################################
@@ -99,6 +102,7 @@ class connection:
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG,  pin, mode, count))
+		time.sleep(self.delay)
 		self.modes[pin]=mode
 		self.ws2812count[pin]=count
 		return 0
@@ -110,6 +114,7 @@ class connection:
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_DIGITAL_INPUT))	
+		time.sleep(self.delay)
 		self.modes[pin]=self.MODE_DIGITAL_INPUT
 		return 0
 ######################################### analog input ################################################
@@ -120,6 +125,7 @@ class connection:
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_ANALOG_INPUT))	
+		time.sleep(self.delay)
 		self.modes[pin]=self.MODE_ANALOG_INPUT
 		return 0
 #######################################################################################################
@@ -144,6 +150,7 @@ class connection:
 			self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_SET, pin, 255*value))
 		else:
 			self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_SET, pin, value))
+		time.sleep(self.delay)
 		return 0
 ##################################### write analog value ##############################################
 	def analogWrite(self,pin,value):
@@ -157,6 +164,7 @@ class connection:
 			self.warn("only values between 0 and 255 are valid")
 			return -1
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_SET, pin, value))
+		time.sleep(self.delay)
 		return 0
 ##################################### read digital value ##############################################
 	def digitalRead(self,pin):
@@ -165,7 +173,9 @@ class connection:
 			self.warn("Please configure the pin accordingly")
 			return -1
 		if(self.modes[pin]==self.MODE_DIGITAL_INPUT):
-			return self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE,self.CMD_GET,pin), i2c.reading(self.address, 1))[0][0]
+			ret = self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE,self.CMD_GET,pin), i2c.reading(self.address, 1))[0][0]
+			time.sleep(self.delay)
+			return ret
 		else:
 			if(analogRead(pin,avoid_mode_warning=1)>100): # >0.5V
 				return 1
@@ -179,6 +189,7 @@ class connection:
 			return -1
 			
 		analog_high, analog_low = self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE,self.CMD_GET,pin), i2c.reading(self.address, 2))[0]
+		time.sleep(self.delay)
 		analog_value = analog_high<<8 | analog_low;
 		return analog_value
 ################################### set ws2812 value ##################################################
@@ -193,7 +204,8 @@ class connection:
 				self.warn("color argument is not of type 'Color'")
 				return -1
 			self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_SET, pin, colors.red, colors.green, colors.blue))
-			
+			time.sleep(self.delay)
+
 		else:
 			type_check=0
 			if(isinstance(colors, list)):
@@ -213,10 +225,11 @@ class connection:
 				msg.append(pin)
 				msg.append(ii*8)
 				for i in range(0,min(self.ws2812count[pin]-ii*8,8)):
-					msg.append(colors[i].red)
-					msg.append(colors[i].green)
-					msg.append(colors[i].blue)
+					msg.append(colors[i+ii*8].red)
+					msg.append(colors[i+ii*8].green)
+					msg.append(colors[i+ii*8].blue)
 				self.bus.transaction(i2c.writing(self.address,msg))
+				time.sleep(self.delay)
 		return 0
 #######################################################################################################
 ######################################## USAGE ########################################################

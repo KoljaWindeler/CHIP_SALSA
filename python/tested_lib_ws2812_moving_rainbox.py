@@ -16,9 +16,9 @@ MAX=(255//LC)*LC
 STEP=MAX//LC
 for i in range(0,LC//3):
 	colorArray.append(arduino_bridge.Color(MAX-STEP*i, STEP*i, 0))
-for i in range(0,6):
+for i in range(0,LC//3):
 	colorArray.append(arduino_bridge.Color(0, MAX-STEP*i, STEP*i))
-for i in range(0,6):
+for i in range(0,LC//3):
 	colorArray.append(arduino_bridge.Color(STEP*i, 0, MAX-STEP*i))
 
 # send it
