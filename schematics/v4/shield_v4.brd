@@ -153,6 +153,8 @@ v2.1 LED/Motor
         JKW</text>
 <wire x1="0" y1="50" x2="0" y2="0" width="0.4064" layer="20"/>
 <wire x1="0" y1="0" x2="41" y2="0" width="0.4064" layer="20"/>
+<text x="-5.98" y="24.75" size="1.778" layer="20" rot="R270" align="center">ordered 3x at oshpark 
+2016/01/27</text>
 </plain>
 <libraries>
 <library name="SparkFun-DigitalIC">
