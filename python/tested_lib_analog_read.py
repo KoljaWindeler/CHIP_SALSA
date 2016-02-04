@@ -1,6 +1,6 @@
 import arduino_bridge
 
-pin = 4
+pin = 8
 
 arduino = arduino_bridge.connection()
 arduino.setup_analog_input(pin)

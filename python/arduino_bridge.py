@@ -35,7 +35,8 @@ class connection:
 	MODE_DIGITAL_INPUT	= 0x05
 	MODE_DIGITAL_OUTPUT     = 0x06
 	
-	delay = 0.001
+	delay = 0.10
+	setup_delay = 0.100
 	
 ######################################## constructor ##################################################
 	def __init__(self, bus="", address="", warnings=1):
@@ -71,7 +72,7 @@ class connection:
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_DIGITAL_OUTPUT))	
-		time.sleep(self.delay)
+		time.sleep(self.setup_delay)
 		self.modes[pin]=self.MODE_DIGITAL_OUTPUT
 		return 0
 ################################### pwm output ########################################################
@@ -82,7 +83,7 @@ class connection:
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_PWM))	
-		time.sleep(self.delay)
+		time.sleep(self.setup_delay)
 		self.modes[pin]=self.MODE_PWM
 		return 0
 ################################## ws2812 control #####################################################
@@ -102,7 +103,7 @@ class connection:
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG,  pin, mode, count))
-		time.sleep(self.delay)
+		time.sleep(self.setup_delay)
 		self.modes[pin]=mode
 		self.ws2812count[pin]=count
 		return 0
@@ -114,7 +115,7 @@ class connection:
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_DIGITAL_INPUT))	
-		time.sleep(self.delay)
+		time.sleep(self.setup_delay)
 		self.modes[pin]=self.MODE_DIGITAL_INPUT
 		return 0
 ######################################### analog input ################################################
@@ -125,7 +126,7 @@ class connection:
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_ANALOG_INPUT))	
-		time.sleep(self.delay)
+		time.sleep(self.setup_delay)
 		self.modes[pin]=self.MODE_ANALOG_INPUT
 		return 0
 #######################################################################################################
@@ -137,7 +138,7 @@ class connection:
 ######################################## USAGE ########################################################
 ####################################### set pin high or low ##############################################
 	def digitalWrite(self,pin,value):
-		if(self.modes[pin]!=self.MODE_PWM and self.modes[pin]!=self.MODE_ANALOG_INPUT and self.modes[pin]!=self.MODE_DIGITAL_OUTPUT):
+		if(self.modes[pin]!=self.MODE_PWM and self.modes[pin]!=self.MODE_ANALOG_INPUT and self.modes[pin]!=self.MODE_DIGITAL_OUTPUT and self.modes[pin]!=self.MODE_DIGITAL_INPUT):
 			self.warn("pin "+str(pin)+" not configured for digital output, pwm output or analog input")
 			self.warn("Please configure the pin accordingly")
 			return -1
@@ -173,7 +174,9 @@ class connection:
 			self.warn("Please configure the pin accordingly")
 			return -1
 		if(self.modes[pin]==self.MODE_DIGITAL_INPUT):
-			ret = self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE,self.CMD_GET,pin), i2c.reading(self.address, 1))[0][0]
+			self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE,self.CMD_GET,pin))
+			time.sleep(0.05)
+			ret = self.bus.transaction(i2c.reading(self.address, 1))[0][0]
 			time.sleep(self.delay)
 			return ret
 		else:
@@ -188,7 +191,9 @@ class connection:
 			self.warn("Please configure the pin accordingly")
 			return -1
 			
-		analog_high, analog_low = self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE,self.CMD_GET,pin), i2c.reading(self.address, 2))[0]
+		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE,self.CMD_GET,pin))
+		time.sleep(0.05)
+		analog_low, analog_high = self.bus.transaction(i2c.reading(self.address, 2))[0]
 		time.sleep(self.delay)
 		analog_value = analog_high<<8 | analog_low;
 		return analog_value
