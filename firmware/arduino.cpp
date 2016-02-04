@@ -20,12 +20,13 @@
 #define ST_CONFIG_CHANNEL		0x01
 #define ST_CONFIG_MODE 			0x02
 #define ST_SET_CHANNEL			0x03
-#define ST_SET_OFFSET			0x04
-#define ST_SET_SINGLE_VALUE 		0x05
-#define ST_SET_VALUE_R 			0x06
-#define ST_SET_VALUE_G 			0x07
-#define ST_SET_VALUE_B			0x08
-#define ST_WS2812_NUM			0x09
+#define ST_GET_CHANNEL			0x04
+#define ST_SET_OFFSET			0x05
+#define ST_SET_SINGLE_VALUE 		0x06
+#define ST_SET_VALUE_R 			0x07
+#define ST_SET_VALUE_G 			0x08
+#define ST_SET_VALUE_B			0x09
+#define ST_WS2812_NUM			0x0A
 
 #define TRANSFER_TIMEOUT 50
 #define I2C_ADDRESS	0x04
@@ -142,16 +143,36 @@ void config_pin(uint8_t pin){
  // we can not pre-poplate the i2c send buffer, (yeah, too bad, I know)
  // but we can fill our own buffer
 void get_value(){
+#ifdef DEBUG
+	Serial.print("get value for pin ");
+	Serial.println(shield_to_arduino_pin(m_channel));
+#endif
 	if(m_modes[m_channel] == MODE_DIGITAL_INPUT){
 		m_response_buffer[0] = digitalRead(shield_to_arduino_pin(m_channel));
 		m_response_length = 1;
+#ifdef DEBUG
+		Serial.print("digital read value: ");
+		Serial.println(m_response_buffer[0]);
+#endif
 	} else 	if(m_modes[m_channel] == MODE_ANALOG_INPUT){
 		uint16_t value=analogRead(shield_to_arduino_pin(m_channel));
 		uint8_t data[2];
 		m_response_buffer[1] =  value >> 8;
 		m_response_buffer[0] =  value & 0xff;
 		m_response_length = 2;
+#ifdef DEBUG
+		Serial.print("Value: ");
+		Serial.println(value);
+		Serial.print("Sending as ");
+		Serial.print(m_response_buffer[1]);
+		Serial.print("/");
+		Serial.println(m_response_buffer[0]);
+#endif
 	}
+#ifdef DEBUG
+	Serial.print("Bffer: ");
+	Serial.println(m_response_length);
+#endif
 }
  //========================= return read values =========================//
 //========================= control the leds, outputs =========================//
@@ -169,7 +190,13 @@ void set_value(){
 	}	// pwm end 
 
 	// digital write
-	else if(m_modes[m_channel]==MODE_DIGITAL_OUTPUT){
+	else if(m_modes[m_channel]==MODE_DIGITAL_OUTPUT || m_modes[m_channel]==MODE_DIGITAL_INPUT || m_modes[m_channel]==MODE_ANALOG_INPUT){ // pull ups
+#ifdef DEBUG
+		Serial.print("digitalWrite ");
+		Serial.print(m_value);
+		Serial.print(" at pin ");
+		Serial.println(shield_to_arduino_pin(m_channel));
+#endif		
 		digitalWrite(shield_to_arduino_pin(m_channel),m_value);
 	}
 	
@@ -215,13 +242,13 @@ void receiveEvent(int howMany){
 			if(c == CMD_SET){			// setup a channel
 				m_state = ST_SET_CHANNEL;
 			} else if(c == CMD_GET){		// get a value
-				m_state = ST_SET_CHANNEL;
+				m_state = ST_GET_CHANNEL;
 			} else if(c == CMD_CONFIG) { // configure a channel
 				m_state = ST_CONFIG_CHANNEL;
 			} else if(c == CMD_RESET) { //call reset
 				resetFunc();  
 			}
-		} else if(m_state==ST_SET_CHANNEL || m_state==ST_CONFIG_CHANNEL ){ // Second byte: we need to know what channel we are talking about
+		} else if(m_state==ST_SET_CHANNEL || m_state==ST_GET_CHANNEL || m_state==ST_CONFIG_CHANNEL ){ // Second byte: we need to know what channel we are talking about
 			m_channel = c;
 			// distinguish where we have to go, depending on our current state
 			if(m_state==ST_CONFIG_CHANNEL) {	// configuration		
@@ -237,11 +264,17 @@ void receiveEvent(int howMany){
 				} else if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){
 					m_state=ST_SET_OFFSET;
 				} 
+				// SET a channel ( pull up on inputs)
+				else if(m_state==ST_SET_CHANNEL && m_modes[m_channel]==MODE_DIGITAL_INPUT){
+					m_state=ST_SET_SINGLE_VALUE;
+				} else if(m_state==ST_SET_CHANNEL && m_modes[m_channel]==MODE_ANALOG_INPUT){
+					m_state=ST_SET_SINGLE_VALUE;
+				} 
 				// GET a channel (inputs)
-				else if(m_modes[m_channel]==MODE_DIGITAL_INPUT){
+				else if(m_state==ST_GET_CHANNEL && m_modes[m_channel]==MODE_DIGITAL_INPUT){
 					get_value();
 					m_state=ST_CMD;
-				} else if(m_modes[m_channel]==MODE_ANALOG_INPUT){
+				} else if(m_state==ST_GET_CHANNEL && m_modes[m_channel]==MODE_ANALOG_INPUT){
 					get_value();
 					m_state=ST_CMD;
 				} 
@@ -274,6 +307,9 @@ void receiveEvent(int howMany){
 		} else if(m_state==ST_SET_SINGLE_VALUE){		// pwm
 			m_value=c;
 			m_state=ST_WAIT;
+#ifdef DEBUG
+			Serial.println("call set_Value");
+#endif
 			set_value();
 		} else if(m_state==ST_SET_VALUE_R){	// STEP1 for MODE_SINGLE_COLOR_WS2812 or MODE_MULTI_COLOR_WS2812
 			m_value_r=c;
@@ -311,7 +347,16 @@ void receiveEvent(int howMany){
 // this readcall triggers the onRequestService, to whom we've subscribed. So filling the buffer now should work
 // remember to set the MAX_RESPONSE_LENGTH according to your answer. 
 void requestEvent(){
+#ifdef DEBUG
+	Serial.println("Request event");
+#endif
 	if(m_response_length && m_response_length<MAX_RESPONSE_LENGTH){
+#ifdef DEBUG
+		Serial.println("writing");
+		for(int i=0; i<m_response_length;i++){
+			Serial.print(m_response_buffer[i]);
+		}
+#endif
 		Wire.write(m_response_buffer,m_response_length);
 		m_response_length = 0;
 	}
