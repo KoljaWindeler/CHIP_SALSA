@@ -43,29 +43,37 @@ uint8_t		m_value_b=0;
 uint8_t		m_value=0;
 uint8_t		m_current_led=0;
 
-uint8_t m_modes[5+4+4]; // 5+4+4 channels, saves the modes per channel, e.g. PWM or WS2812 // TODO new board
-uint8_t m_ws_count[4]; //  only lower 4 channels	// TODO new board
+uint8_t m_modes[13]; // 13 channels, saves the modes per channel, e.g. PWM or WS2812 // TODO new board
+uint8_t m_ws_count[13]; 
 uint8_t m_response_buffer[MAX_RESPONSE_LENGTH];
 uint8_t m_response_length=0;
-WS2812* m_ws2812[4]; //  only lower 4 channels	// TODO new board
+WS2812* m_ws2812[13]; 
 cRGB value;
 
 
 //========================= i2c config and init? =========================//
 void setup(){
-	Wire.begin(I2C_ADDRESS);                // join i2c bus with address #4
+	// Activate Pin PB6 and PB7 input pull up and read i2c address adder value
+	DDRB &= ~((1 << 6) & (1 << 7));
+	PORTB |= (1 << 6) | (1 << 7); 
+	uint8_t i2c_adder = PINB>>5;
+	
+	Wire.begin(I2C_ADDRESS+i2c_adder);                // join i2c bus with address #4,5,6 or 7
 	Wire.onReceive(receiveEvent); // register event
 	Wire.onRequest(requestEvent); // register event
+	
+	// prepare vars
 	for(int i=0; i<13; i++){
 		m_modes[i]=0xff; // invalid
 	}
-	for(int i=0; i<4; i++){
+	for(int i=0; i<13; i++){
 		m_ws_count[i]=0;
 	}
 
 #ifdef DEBUG
 	Serial.begin(9600);
-	Serial.println("woop woop");
+	Serial.print("woop woop online at ID ");
+	Serial.println(I2C_ADDRESS+i2c_adder);
 #endif
 }
 //========================= i2c config and init? =========================//
@@ -82,31 +90,25 @@ void loop(){
 //========================= declare reset function @ address 0 =========================//
 void(* resetFunc) (void) = 0; 
 //========================= declare reset function @ address 0 =========================//
-//========================= translate linear shield pins to arduino pins =========================//
+//========================= translate linear DIP pins to arduino pins =========================//
 int shield_to_arduino_pin(uint8_t shield_pin){
-	// channel row 1, left-to-right:	|| 	11(PB3), 	10(PB2),	9(PB1), 	6(PD6), 	5(PD5)	||
-	// channel row 2, left-to-right:	||	 -(ADC7), 	A1/15(PC1), 	A2/16(PC2), 	A3/17(PC3),	XXX	||
-	// channel row 3, left-to-right: 	||	0(PD0), 	1(PD1), 	2(PD2), 	3(PD3),		XXX	|| only these are used for up to 4 parallel ws2812 channels
-	
-	if(shield_pin==0)	{	return	11;	}	// upper left
-	else if(shield_pin==1)	{	return	10;	}
-	else if(shield_pin==2)	{	return	9;	}
-	else if(shield_pin==3)	{	return	6;	}
-	else if(shield_pin==4)	{	return	5;	} // upper right
-	
-	//else if(shield_pin==5){	return	0;	} // middle left
-	else if(shield_pin==6)	{	return	15;	}
-	else if(shield_pin==7)	{	return	16;	}
-	else if(shield_pin==8)	{	return	17;	} // middle right
-	
-	else if(shield_pin==9)	{	return	0;	} // lower left
-	else if(shield_pin==10)	{	return	1;	}
-	else if(shield_pin==11)	{	return	2;	}
-	else if(shield_pin==12)	{	return	3;	} // lower right
+	if(shield_pin==0)	{	return	10;	}	
+	else if(shield_pin==1)	 {	return	9;	}
+	else if(shield_pin==2)	 {	return	6;	}
+	else if(shield_pin==3)	 {	return	5;	} 
+	else if(shield_pin==4)	 {	return	15;	} 
+	//else if(shield_pin==5){	return	0;	} 
+	else if(shield_pin==6)	 {	return	2;	}
+	else if(shield_pin==7)	 {	return	11;	} 
+	else if(shield_pin==8)	 {	return	16;	} 
+	else if(shield_pin==9) 	{	return	3;	} 
+	else if(shield_pin==10)	{	return	17;	}
+	else if(shield_pin==11)	{	return	8;	}
+	else if(shield_pin==12)	{	return	7;	} 
 	
 	return -1; // hmm
 }
-//========================= translate linear shield pins to arduino pins =========================//
+//========================= translate linear DIP pins to arduino pins =========================//
 //========================= setup - on-the-fly =========================//
 void config_pin(uint8_t pin){
 	if(m_modes[pin]==MODE_PWM){
@@ -118,24 +120,19 @@ void config_pin(uint8_t pin){
 #endif
 		pinMode(shield_to_arduino_pin(pin),OUTPUT);
 	} else if(m_modes[pin]==MODE_ANALOG_INPUT){
-		if(pin>=6 && pin<=8){
-			pinMode(pin,INPUT);
-		}
+		pinMode(pin,INPUT);
 	} else if(m_modes[pin]==MODE_DIGITAL_INPUT){
 		pinMode(pin,INPUT);
 	} else if(m_modes[pin]==MODE_DIGITAL_OUTPUT){
 		pinMode(pin,OUTPUT);
 	} else if(m_modes[pin]==MODE_SINGLE_COLOR_WS2812 || m_modes[pin]==MODE_MULTI_COLOR_WS2812){
-		if(pin>=9 && pin<=11){
 #ifdef DEBUG
-			Serial.print("ws2812 at pin ");
-			Serial.println(shield_to_arduino_pin(pin));
+		Serial.print("ws2812 at pin ");
+		Serial.println(shield_to_arduino_pin(pin));
 #endif
-
-			WS2812 *ws2812 = new WS2812(m_ws_count[pin-9]);
-			ws2812->setOutput(shield_to_arduino_pin(pin)); 
-			m_ws2812[pin-9]=ws2812; // save pointer
-		}
+		WS2812 *ws2812 = new WS2812(m_ws_count[pin]);
+		ws2812->setOutput(shield_to_arduino_pin(pin)); 
+		m_ws2812[pin]=ws2812; // save pointer
 	}
 }
 //========================= setup - on-the-fly =========================//
@@ -210,19 +207,19 @@ void set_value(){
 		if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812){
 #ifdef DEBUG
 			Serial.print("single color for ");			
-			Serial.print(m_ws_count[m_channel-9]);
+			Serial.print(m_ws_count[m_channel]);
 			Serial.println(" leds");
 #endif
 
-			for(int i=0; i<m_ws_count[m_channel-9]; i++){
-				m_ws2812[m_channel-9]->set_crgb_at(i, value); // Set value at all LEDs
+			for(int i=0; i<m_ws_count[m_channel]; i++){
+				m_ws2812[m_channel]->set_crgb_at(i, value); // Set value at all LEDs
 			}
-			m_ws2812[m_channel-9]->sync(); // Sends the value to the LED
+			m_ws2812[m_channel]->sync(); // Sends the value to the LED
 		} else if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){ 
-			m_ws2812[m_channel-9]->set_crgb_at(m_current_led, value); // Set value at LED found at RUNNING INDEX
+			m_ws2812[m_channel]->set_crgb_at(m_current_led, value); // Set value at LED found at RUNNING INDEX
 			m_current_led++;
-			if(m_current_led>=m_ws_count[m_channel-9]){
-				m_ws2812[m_channel-9]->sync(); // Sends the value to the LED only when all value are known
+			if(m_current_led>=m_ws_count[m_channel]){
+				m_ws2812[m_channel]->sync(); // Sends the value to the LED only when all value are known
 			}
 		}
 	}	// ws 2812 end
@@ -295,7 +292,7 @@ void receiveEvent(int howMany){
 				m_state=ST_WAIT;  // illegal mode, go back to wait state
 			}
 		} else if(m_state==ST_WS2812_NUM){
-			m_ws_count[m_channel-9]=c; // TODO new board
+			m_ws_count[m_channel]=c; 
 			m_state=ST_WAIT;
 			config_pin(m_channel);
 		}
@@ -321,7 +318,7 @@ void receiveEvent(int howMany){
 			m_value_b=c;
 			set_value();	// save color and sync
 			if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){ 	// maybe we have to go back to red
-				if(m_current_led>=m_ws_count[m_channel-9] || m_current_led%8==0){ // set_value() has already increase: m_current_led++, are we done, (at least with this block?)
+				if(m_current_led>=m_ws_count[m_channel] || m_current_led%8==0){ // set_value() has already increase: m_current_led++, are we done, (at least with this block?)
 					m_state=ST_WAIT; // done
 				} else {
 					m_state=ST_SET_VALUE_R; // resume to STEP 1

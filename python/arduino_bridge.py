@@ -67,8 +67,8 @@ class connection:
 ######################################## SETUP #########################################################
 ################################### digital output ####################################################
 	def setup_digital_output(self,pin):
-		if(pin!=4 and pin<6 and pin>10):
-			self.warn("Digital output only supported on pins 4, 6-10")
+		if(pin==5):
+			self.warn("Digital output not supported on pin 5")
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_DIGITAL_OUTPUT))	
@@ -77,9 +77,9 @@ class connection:
 		return 0
 ################################### pwm output ########################################################
 	def setup_pwm_output(self,pin):
-		# only pins 0-3
-		if(pin>4):#TODO new board will have 0-3, old has 1-4
-			self.warn("PWM output only supported on pins 0,1,2,3")
+		# only pins 0-3,7,9
+		if(pin>3 and pin!=7 and pin!=9):
+			self.warn("PWM output only supported on pins 0,1,2,3,7,9")
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_PWM))	
@@ -93,8 +93,8 @@ class connection:
 		return self.setup_ws2812_output(pin,count,self.MODE_MULTI_COLOR_WS2812)
 	def setup_ws2812_output(self,pin,count,mode=MODE_SINGLE_COLOR_WS2812):
 		# only pins 6-10
-		if(pin<6 and pin>10):
-			self.warn("ws2812 only supported on pins 6-10")
+		if(pin==4 or pin==5 or pin==8 or pin==10):
+			self.warn("ws2812 only supported on pins (0,1,2,3),6,7,9,11,12")
 			return -1
 		if(mode!=self.MODE_SINGLE_COLOR_WS2812 and mode!=self.MODE_MULTI_COLOR_WS2812):
 			self.warn("invalid mode for ws2812 output")
@@ -111,7 +111,7 @@ class connection:
 	def setup_digital_input(self,pin):
 		# only pins 4,6,7
 		if(pin!=4 and pin<6 and pin>10):
-			self.warn("Digital output only supported on pins 4 and 6-10")
+			self.warn("Digital output only supported on pins 4,6-12")
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_DIGITAL_INPUT))	
@@ -121,8 +121,8 @@ class connection:
 ######################################### analog input ################################################
 	def setup_analog_input(self,pin):
 		# only pins 4
-		if(pin!=4 and pin!=8 and pin!=9):
-			self.warn("Analog input only supported on pins 4,8 and 9")
+		if(pin!=4 and pin!=8 and pin!=10):
+			self.warn("Analog input only supported on pins 4,8 and 10")
 			return -1
 			
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_CONFIG, pin, self.MODE_ANALOG_INPUT))	
