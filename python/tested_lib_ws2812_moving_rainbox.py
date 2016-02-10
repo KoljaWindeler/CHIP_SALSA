@@ -1,11 +1,12 @@
 import arduino_bridge
 import time
 
+
 # set pin 11 as 20 ws2812, all with unique colors
-LC=18
+LC=6
 ROUNDS=10
 DELAY=0.02
-pin = 11
+pin = 6
 
 arduino = arduino_bridge.connection()
 arduino.setup_ws2812_unique_color_output(pin,LC)

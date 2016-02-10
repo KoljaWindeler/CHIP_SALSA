@@ -5,7 +5,7 @@ import arduino_bridge
 ledcount=18
 rounds=10
 delay=0.03
-pin = 11
+pin = 6
 
 arduino = arduino_bridge.connection()
 arduino.setup_ws2812_common_color_output(pin,ledcount)

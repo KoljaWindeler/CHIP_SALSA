@@ -1,10 +1,13 @@
 import arduino_bridge
+import time
 
-pin=4
+pin=1
 value=122
 
 arduino = arduino_bridge.connection()
 arduino.setup_pwm_output(pin)
 
-arduino.setPWM(pin,value)
-print("GPIO pin "+str(pin)+" set duty cycle to "+str(value))
+for i in range(0,25):
+	arduino.setPWM(pin,i*10)
+	time.sleep(0.05)
+	print("GPIO pin "+str(pin)+" set duty cycle to "+str(i))
