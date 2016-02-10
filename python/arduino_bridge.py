@@ -56,8 +56,8 @@ class connection:
 		# reset avr and give some time for reboot
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_RESET))
 		time.sleep(1)
-		self.modes = [None] * 13
-		self.ws2812count = [0] * 13
+		self.modes = [None] * 15
+		self.ws2812count = [0] * 15
 		return 0
 ################################# print warnings ######################################################
 	def warn(self,text):
@@ -93,7 +93,7 @@ class connection:
 		return self.setup_ws2812_output(pin,count,self.MODE_MULTI_COLOR_WS2812)
 	def setup_ws2812_output(self,pin,count,mode=MODE_SINGLE_COLOR_WS2812):
 		# only pins 6-10
-		if(pin==4 or pin==5 or pin==8 or pin==10):
+		if(pin==4 or pin==5 or pin==8 or pin==10 or pin==13 or pin==14):
 			self.warn("ws2812 only supported on pins (0,1,2,3),6,7,9,11,12")
 			return -1
 		if(mode!=self.MODE_SINGLE_COLOR_WS2812 and mode!=self.MODE_MULTI_COLOR_WS2812):
