@@ -91,6 +91,13 @@ void loop(){
 				} else if(m_pins[i].m_value > m_pins[i].m_target_value){
 					m_pins[i].m_value--;
 				}
+
+				#ifdef DEBUG
+				Serial.print("Dimming pin: ");
+				Serial.print(m_pins[m_channel].m_arduino_pin);
+				Serial.print(" set value ");
+				Serial.println(intens[m_pins[m_channel].m_value]);
+				#endif
 				
 				// write value to pin
 				analogWrite(m_pins[i].m_arduino_pin, intens[m_pins[i].m_value]);
@@ -373,10 +380,20 @@ void parse(){
 		else if(m_receive_buffer[1] == CMD_DIMM && m_receive_length>=5){
 			m_channel = m_receive_buffer[2];
 			if(m_pins[m_channel].m_mode==MODE_PWM){
-				m_pins[m_channel].m_target_value = max(m_receive_buffer[3], 99); 	// 0-99 = 0-100%
+				m_pins[m_channel].m_target_value = min(m_receive_buffer[3], 99); 	// 0-99 = 0-100%
 				m_pins[m_channel].m_dimm_interval = m_receive_buffer[4];					// ms
 				m_pins[m_channel].m_mode = MODE_PWM_DIMMING;
 				m_pins[m_channel].m_next_action  = millis();
+
+				#ifdef DEBUG
+				Serial.print("Dimming pin: ");
+				Serial.print(m_pins[m_channel].m_arduino_pin);
+				Serial.print(" from value ");
+				Serial.print(m_pins[m_channel].m_value);
+				Serial.print(" to value ");
+				Serial.println(m_pins[m_channel].m_target_value);
+				#endif
+
 			 }
 		}
 		///////////////////////////////  DIMM THE PIN ///////////////////////////////
