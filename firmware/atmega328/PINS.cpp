@@ -8,6 +8,7 @@ PIN::PIN(){
 	m_arduino_pin = 0xff;
 	m_mode = 0xff;
 	m_ws2812_count = 0xff;
+	m_value=0x00;
 };
 
 void PIN::set(bool analog_in, bool digital, bool pwm, bool ws2812, uint8_t arduino_pin){
@@ -18,6 +19,7 @@ void PIN::set(bool analog_in, bool digital, bool pwm, bool ws2812, uint8_t ardui
 	m_arduino_pin = arduino_pin;
 	m_mode = 0xff;
 	m_ws2812_count = 0;
+	m_value=0x00;
 };
 
 bool PIN::is_analog_in(){

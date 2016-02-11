@@ -16,6 +16,11 @@ class PIN {
 
 		uint8_t m_arduino_pin=0xff;
 		uint8_t m_mode=0xff;
+		uint8_t m_target_value = 0x00;
+		uint16_t m_value=0x00; // 16 bit for analog read (10 bit adc)
+		uint16_t m_dimm_interval  = 0x00;
+		uint32_t m_next_action  = 0x00;
+		
 
 		WS2812* m_ws2812_pointer;
 		uint16_t m_ws2812_count;
@@ -25,6 +30,7 @@ class PIN {
 		bool m_digital=false;
 		bool m_pwm=false;
 		bool m_ws2812=false;
+		
 		
 };	
 #endif
