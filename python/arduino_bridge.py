@@ -27,6 +27,7 @@ class connection:
 	CMD_CONFIG	= 0xF1
 	CMD_GET		= 0xF2
 	CMD_RESET	= 0xF3
+	CMD_DIMM	= 0xF4
 
 	MODE_PWM		= 0x01
 	MODE_ANALOG_INPUT	= 0x02
@@ -35,8 +36,8 @@ class connection:
 	MODE_DIGITAL_INPUT	= 0x05
 	MODE_DIGITAL_OUTPUT     = 0x06
 	
-	delay = 0.10
-	setup_delay = 0.100
+	delay = 0.0 #10
+	setup_delay = 0.0#100
 	
 ######################################## constructor ##################################################
 	def __init__(self, bus="", address="", warnings=1):
@@ -167,6 +168,19 @@ class connection:
 		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_SET, pin, value))
 		time.sleep(self.delay)
 		return 0
+	def dimmTo(self,pin,value,interval):
+		if(self.modes[pin]!=self.MODE_PWM):
+			self.warn("pin "+str(pin)+" not configured for pwm output")
+			self.warn("Please configure the pin accordingly")
+			return -1
+		if(value<0 or value>100):
+			self.warn("only values between 0 and 100 are valid, I will translate it to 0-255")
+			return -1
+		if(interval<1):
+			self.warn("interval is defined in ms, value has to be >=1)")
+			return -1
+		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_DIMM, pin, value, int(interval)))
+		time.sleep(self.delay)
 ##################################### read digital value ##############################################
 	def digitalRead(self,pin):
 		if(self.modes[pin]!=self.MODE_DIGITAL_INPUT and self.modes[pin]!=self.MODE_ANALOG_INPUT ):
