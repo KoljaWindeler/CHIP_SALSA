@@ -10379,7 +10379,7 @@ based on WS2812 from https://github.com/adafruit/Adafruit-Eagle-Library</descrip
 <part name="PAD8" library="wirepad" deviceset="WIREPAD" device="SMD1,27-254"/>
 <part name="PAD12" library="wirepad" deviceset="SMD2" device=""/>
 <part name="PAD13" library="wirepad" deviceset="SMD2" device=""/>
-<part name="C12" library="rcl" deviceset="C-EU" device="C1206"/>
+<part name="C12" library="rcl" deviceset="C-EU" device="C1206" value="100nF"/>
 <part name="SJ2" library="jumper" deviceset="SJ" device=""/>
 <part name="P+2" library="supply1" deviceset="VCC" device=""/>
 <part name="IC1" library="st-microelectronics" deviceset="L293DD" device=""/>

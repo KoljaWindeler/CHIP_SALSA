@@ -2925,7 +2925,7 @@ design rules under a new name.</description>
 <element name="PAD13" library="wirepad" package="SMD1,27-2,54" value="" x="30" y="12.23" smashed="yes" rot="R90">
 <attribute name="VALUE" x="30" y="12.23" size="0.0254" layer="27" rot="R90"/>
 </element>
-<element name="C12" library="rcl" package="C1206" value="" x="9.04" y="6.73" smashed="yes" rot="MR0">
+<element name="C12" library="rcl" package="C1206" value="100nF" x="9.04" y="6.73" smashed="yes" rot="MR0">
 <attribute name="VALUE" x="10.31" y="4.19" size="1.27" layer="28" rot="MR0"/>
 </element>
 <element name="SJ2" library="jumper" package="SJ" value="" x="7.82" y="25.17" smashed="yes">
