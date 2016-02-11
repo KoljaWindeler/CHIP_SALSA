@@ -1,11 +1,13 @@
-#include </home/kolja/projects/CHIP_pwm_shield/firmware/atmega328/WS2812.h>	// thanks Matthias Riegler!
+#include "WS2812.h"	// thanks Matthias Riegler!
+#include "PINS.h"
 #include <Wire.h>
 
 #define START_BYTE		0xCE
-#define CMD_SET 		0xF0
+#define CMD_SET_SIMPLE 		0xF0
 #define CMD_CONFIG		0xF1
 #define CMD_GET			0xF2
 #define CMD_RESET		0xF3
+#define CMD_DIMM		0xF4
 
 #define MODE_PWM			0x01
 #define MODE_ANALOG_INPUT		0x02
@@ -14,349 +16,399 @@
 #define MODE_DIGITAL_INPUT		0x05
 #define MODE_DIGITAL_OUTPUT		0x06
 #define MAX_MODE			MODE_DIGITAL_OUTPUT
+// non user mode
+#define MODE_PWM_DIMMING 	0xF1
 
-#define ST_WAIT 			0xFF
-#define ST_CMD 				0x00
-#define ST_CONFIG_CHANNEL		0x01
-#define ST_CONFIG_MODE 			0x02
-#define ST_SET_CHANNEL			0x03
-#define ST_GET_CHANNEL			0x04
-#define ST_SET_OFFSET			0x05
-#define ST_SET_SINGLE_VALUE 		0x06
-#define ST_SET_VALUE_R 			0x07
-#define ST_SET_VALUE_G 			0x08
-#define ST_SET_VALUE_B			0x09
-#define ST_WS2812_NUM			0x0A
 
-#define TRANSFER_TIMEOUT 50
-#define I2C_ADDRESS	0x04
+#define TRANSFER_TIMEOUT 	50
+#define I2C_ADDRESS		0x04
+#define MAX_CHANNEL_COUNT 	17
 
-#define DEBUG
-#define MAX_RESPONSE_LENGTH 4
+//#define DEBUG			1		// if you enabled this: remember to slow your request down! serial.print is sloooow
+#define MAX_RESPONSE_LENGTH 	4
 
-uint32_t	m_lasttransfer=0;
-uint8_t		m_state=ST_WAIT;
+uint8_t intens[100] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,27,28,29,30,31,32,33,34,35,36,38,39,40,41,43,44,45,47,48,50,51,53,55,57,58,60,62,64,66,68,70,73,75,77,80,82,85,88,91,93,96,99,103,106,109,113,116,120,124,128,132,136,140,145,150,154,159,164,170,175,181,186,192,198,205,211,218,225,232,239,247,255};
+
+
 uint8_t		m_channel=0;
-uint8_t		m_value_r=0;
-uint8_t		m_value_g=0;
-uint8_t		m_value_b=0;
-uint8_t		m_value=0;
-uint8_t		m_current_led=0;
+uint8_t 	m_receive_buffer[32];
+uint8_t 	m_receive_length=0;
+uint8_t 	m_response_buffer[MAX_RESPONSE_LENGTH];
+uint8_t 	m_response_length=0;
+cRGB 		value;
 
-uint8_t m_modes[5+4+4]; // 5+4+4 channels, saves the modes per channel, e.g. PWM or WS2812 // TODO new board
-uint8_t m_ws_count[4]; //  only lower 4 channels	// TODO new board
-uint8_t m_response_buffer[MAX_RESPONSE_LENGTH];
-uint8_t m_response_length=0;
-WS2812* m_ws2812[4]; //  only lower 4 channels	// TODO new board
-cRGB value;
+PIN m_pins[MAX_CHANNEL_COUNT];
 
 
 //========================= i2c config and init? =========================//
 void setup(){
-	Wire.begin(I2C_ADDRESS);                // join i2c bus with address #4
+	// Activate Pin PB6 and PB7 input pull up and read i2c address adder value
+	DDRB &= ~((1 << 6) & (1 << 7));
+	PORTB |= (1 << 6) | (1 << 7); 
+	delay(10); // 10ms to pull the pin up
+	uint8_t i2c_adder = ((PINB ^ 0xff)>>6);
+
+	// prepare
+	//set(bool analog_in, bool digital, bool pwm, bool ws2812, uint8_t arduino_pin);
+	m_pins[0].set(false, true, true, true, 10);
+	m_pins[1].set(false, true, true, true, 9);
+	m_pins[2].set(false, true, true, true, 6);
+	m_pins[3].set(false, true, true, true, 5);
+	m_pins[4].set(true, true, true, false, 15);
+	m_pins[5].set(false, false, false, false, 0xff);
+	m_pins[6].set(false, true, false, true, 2);
+	m_pins[7].set(false, true, false, true, 11);
+	m_pins[8].set(true, true, true, false, 16);
+	m_pins[9].set(false, true, false, true, 3);
+	m_pins[10].set(true, true, true, false, 17);
+	m_pins[11].set(false, true, false, true, 8);
+	m_pins[12].set(false, true, false, true, 7);
+
+	m_pins[13].set(false, true, true, false, 12); // internal pin to motor driver
+	m_pins[14].set(false, true, true, false, 13); // internal pin to motor driver
+	m_pins[15].set(false, true, true, false, 4);  // internal pin to CHIP
+	m_pins[16].set(false, true, true, false, 14); // internal pin to LED
+
+	
+	Wire.begin(I2C_ADDRESS+i2c_adder);                // join i2c bus with address #4,5,6 or 7
 	Wire.onReceive(receiveEvent); // register event
 	Wire.onRequest(requestEvent); // register event
-	for(int i=0; i<13; i++){
-		m_modes[i]=0xff; // invalid
-	}
-	for(int i=0; i<4; i++){
-		m_ws_count[i]=0;
-	}
-
-#ifdef DEBUG
+	
+	#ifdef DEBUG
 	Serial.begin(9600);
-	Serial.println("woop woop");
-#endif
+	Serial.print("woop woop online at ID ");
+	Serial.println(I2C_ADDRESS+i2c_adder);
+	#endif
 }
 //========================= i2c config and init? =========================//
 //========================= check for incoming  timeouts =========================//
 void loop(){
-	delay(TRANSFER_TIMEOUT);
-	if(millis()-m_lasttransfer>TRANSFER_TIMEOUT && m_state!=ST_WAIT){
-		//Serial.print("State was ");
-		//Serial.println(m_state);
-		m_state=ST_WAIT;
-	}
+	for(uint16_t i=0; i<MAX_CHANNEL_COUNT; i++){
+		if(m_pins[i].m_mode == MODE_PWM_DIMMING){
+			if(m_pins[i].m_next_action <= millis()){
+				if(m_pins[i].m_value < m_pins[i].m_target_value){
+					m_pins[i].m_value++;
+				} else if(m_pins[i].m_value > m_pins[i].m_target_value){
+					m_pins[i].m_value--;
+				}
+				
+				// write value to pin
+				analogWrite(m_pins[i].m_arduino_pin, intens[m_pins[i].m_value]);
+				
+				if(m_pins[i].m_value == m_pins[i].m_target_value){
+					m_pins[i].m_mode = MODE_PWM;
+				} else {
+					m_pins[i].m_next_action += m_pins[i].m_dimm_interval;
+				};
+			};	
+		};
+	};
+
+	if(m_receive_length){
+		parse();
+		m_receive_length=0;
+	};
 }
 //========================= check for incoming  timeouts =========================//
 //========================= declare reset function @ address 0 =========================//
 void(* resetFunc) (void) = 0; 
 //========================= declare reset function @ address 0 =========================//
-//========================= translate linear shield pins to arduino pins =========================//
-int shield_to_arduino_pin(uint8_t shield_pin){
-	// channel row 1, left-to-right:	|| 	11(PB3), 	10(PB2),	9(PB1), 	6(PD6), 	5(PD5)	||
-	// channel row 2, left-to-right:	||	 -(ADC7), 	A1/15(PC1), 	A2/16(PC2), 	A3/17(PC3),	XXX	||
-	// channel row 3, left-to-right: 	||	0(PD0), 	1(PD1), 	2(PD2), 	3(PD3),		XXX	|| only these are used for up to 4 parallel ws2812 channels
-	
-	if(shield_pin==0)	{	return	11;	}	// upper left
-	else if(shield_pin==1)	{	return	10;	}
-	else if(shield_pin==2)	{	return	9;	}
-	else if(shield_pin==3)	{	return	6;	}
-	else if(shield_pin==4)	{	return	5;	} // upper right
-	
-	//else if(shield_pin==5){	return	0;	} // middle left
-	else if(shield_pin==6)	{	return	15;	}
-	else if(shield_pin==7)	{	return	16;	}
-	else if(shield_pin==8)	{	return	17;	} // middle right
-	
-	else if(shield_pin==9)	{	return	0;	} // lower left
-	else if(shield_pin==10)	{	return	1;	}
-	else if(shield_pin==11)	{	return	2;	}
-	else if(shield_pin==12)	{	return	3;	} // lower right
-	
-	return -1; // hmm
-}
-//========================= translate linear shield pins to arduino pins =========================//
 //========================= setup - on-the-fly =========================//
-void config_pin(uint8_t pin){
-	if(m_modes[pin]==MODE_PWM){
-#ifdef DEBUG
-		Serial.print("PWM at pin ");
-		Serial.print(pin);
-		Serial.print(" that is ");
-		Serial.println(shield_to_arduino_pin(pin));
-#endif
-		pinMode(shield_to_arduino_pin(pin),OUTPUT);
-	} else if(m_modes[pin]==MODE_ANALOG_INPUT){
-		if(pin>=6 && pin<=8){
-			pinMode(pin,INPUT);
+void config_pin(){
+	m_response_buffer[0] = 0xff; // assume NACK
+	m_response_length = 1;
+
+	// PWM pins for dimming
+	if(m_pins[m_channel].m_mode==MODE_PWM){
+		if(m_pins[m_channel].is_pwm_out()){	
+			m_response_buffer[0]=0; 
+			
+			#ifdef DEBUG
+			Serial.print("PWM at pin ");
+			Serial.print(m_channel);
+			Serial.print(" that is ");
+			Serial.println(m_pins[m_channel].m_arduino_pin,DEC);
+			#endif
+
+			pinMode(m_pins[m_channel].m_arduino_pin,OUTPUT);
 		}
-	} else if(m_modes[pin]==MODE_DIGITAL_INPUT){
-		pinMode(pin,INPUT);
-	} else if(m_modes[pin]==MODE_DIGITAL_OUTPUT){
-		pinMode(pin,OUTPUT);
-	} else if(m_modes[pin]==MODE_SINGLE_COLOR_WS2812 || m_modes[pin]==MODE_MULTI_COLOR_WS2812){
-		if(pin>=9 && pin<=11){
-#ifdef DEBUG
+	} 
+
+	// analog input 
+	else if(m_pins[m_channel].m_mode==MODE_ANALOG_INPUT){
+		if(m_pins[m_channel].is_analog_in()){
+			m_response_buffer[0]=0; 
+			
+			#ifdef DEBUG
+			Serial.print("analog in at pin ");
+			Serial.print(m_channel);
+			Serial.print(" that is ");
+			Serial.println(m_pins[m_channel].m_arduino_pin,DEC);
+			#endif
+			
+			pinMode(m_pins[m_channel].m_arduino_pin,INPUT);
+		};
+	} 
+
+	// digital input 
+	else if(m_pins[m_channel].m_mode==MODE_DIGITAL_INPUT){
+		if(m_pins[m_channel].is_digital_inout()){	
+			m_response_buffer[0]=0;
+			pinMode(m_pins[m_channel].m_arduino_pin,INPUT);
+		};
+	} 
+
+	// digital output
+	else if(m_pins[m_channel].m_mode==MODE_DIGITAL_OUTPUT){
+		if(m_pins[m_channel].is_digital_inout()){
+			m_response_buffer[0]=0;
+			pinMode(m_pins[m_channel].m_arduino_pin,OUTPUT);
+
+			#ifdef DEBUG
+			Serial.print("digital output at pin ");
+			Serial.println(m_pins[m_channel].m_arduino_pin,DEC);
+			#endif		
+
+		};
+	} 
+
+	// WS2812 LEDs
+	else if(m_pins[m_channel].m_mode==MODE_SINGLE_COLOR_WS2812 || m_pins[m_channel].m_mode==MODE_MULTI_COLOR_WS2812){
+		if(m_pins[m_channel].is_ws2812()){
+			m_response_buffer[0]=0;
+			
+			#ifdef DEBUG
 			Serial.print("ws2812 at pin ");
-			Serial.println(shield_to_arduino_pin(pin));
-#endif
-
-			WS2812 *ws2812 = new WS2812(m_ws_count[pin-9]);
-			ws2812->setOutput(shield_to_arduino_pin(pin)); 
-			m_ws2812[pin-9]=ws2812; // save pointer
-		}
+			Serial.println(m_pins[m_channel].m_arduino_pin,DEC);
+			#endif
+			
+			WS2812 *ws2812 = new WS2812(m_pins[m_channel].m_ws2812_count);
+			ws2812->setOutput(m_pins[m_channel].m_arduino_pin); 
+			m_pins[m_channel].m_ws2812_pointer=ws2812; // save pointer
+		};
+	}
+	
+	// un-configure pin-mode if the mode was rejected
+	if(m_response_buffer[0]!=0){
+		m_pins[m_channel].m_mode = 0xff;
 	}
 }
 //========================= setup - on-the-fly =========================//
- //========================= return read values =========================//
- // we can not pre-poplate the i2c send buffer, (yeah, too bad, I know)
- // but we can fill our own buffer
-void get_value(){
-#ifdef DEBUG
-	Serial.print("get value for pin ");
-	Serial.println(shield_to_arduino_pin(m_channel));
-#endif
-	if(m_modes[m_channel] == MODE_DIGITAL_INPUT){
-		m_response_buffer[0] = digitalRead(shield_to_arduino_pin(m_channel));
-		m_response_length = 1;
-#ifdef DEBUG
-		Serial.print("digital read value: ");
-		Serial.println(m_response_buffer[0]);
-#endif
-	} else 	if(m_modes[m_channel] == MODE_ANALOG_INPUT){
-		uint16_t value=analogRead(shield_to_arduino_pin(m_channel));
-		uint8_t data[2];
-		m_response_buffer[1] =  value >> 8;
-		m_response_buffer[0] =  value & 0xff;
-		m_response_length = 2;
-#ifdef DEBUG
-		Serial.print("Value: ");
-		Serial.println(value);
-		Serial.print("Sending as ");
-		Serial.print(m_response_buffer[1]);
-		Serial.print("/");
-		Serial.println(m_response_buffer[0]);
-#endif
-	}
-#ifdef DEBUG
-	Serial.print("Bffer: ");
-	Serial.println(m_response_length);
-#endif
-}
- //========================= return read values =========================//
-//========================= control the leds, outputs =========================//
-void set_value(){
-	// pwm
-	if(m_modes[m_channel]==MODE_PWM){ // output digital
-#ifdef DEBUG
-		Serial.print("dutycycle of ");
-		Serial.print(m_value);
-		Serial.print(" at pin ");
-		Serial.print(shield_to_arduino_pin(m_channel));
-
-#endif
-		analogWrite(shield_to_arduino_pin(m_channel),m_value);
-	}	// pwm end 
-
-	// digital write
-	else if(m_modes[m_channel]==MODE_DIGITAL_OUTPUT || m_modes[m_channel]==MODE_DIGITAL_INPUT || m_modes[m_channel]==MODE_ANALOG_INPUT){ // pull ups
-#ifdef DEBUG
-		Serial.print("digitalWrite ");
-		Serial.print(m_value);
-		Serial.print(" at pin ");
-		Serial.println(shield_to_arduino_pin(m_channel));
-#endif		
-		digitalWrite(shield_to_arduino_pin(m_channel),m_value);
-	}
-	
-	// ws2812
-	else if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812 || m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){ // output pixel
-		// get values
-		value.r = m_value_r; 
-		value.g = m_value_g; 
-		value.b = m_value_b; // RGB Value -> Blue
-
-		if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812){
-#ifdef DEBUG
-			Serial.print("single color for ");			
-			Serial.print(m_ws_count[m_channel-9]);
-			Serial.println(" leds");
-#endif
-
-			for(int i=0; i<m_ws_count[m_channel-9]; i++){
-				m_ws2812[m_channel-9]->set_crgb_at(i, value); // Set value at all LEDs
-			}
-			m_ws2812[m_channel-9]->sync(); // Sends the value to the LED
-		} else if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){ 
-			m_ws2812[m_channel-9]->set_crgb_at(m_current_led, value); // Set value at LED found at RUNNING INDEX
-			m_current_led++;
-			if(m_current_led>=m_ws_count[m_channel-9]){
-				m_ws2812[m_channel-9]->sync(); // Sends the value to the LED only when all value are known
-			}
-		}
-	}	// ws 2812 end
-}
-//========================= control the leds, outputs =========================//
 //========================= i2c input statemachine =========================//
 // function that executes whenever data is received from master
 // this function is registered as an event, see setup()
-void receiveEvent(int howMany){
-	while(Wire.available()){ // loop through all
-		m_lasttransfer=millis();
-		unsigned char c = Wire.read(); // receive byte as a character
-		//Serial.println(c,DEC);      // print the character
+void receiveEvent(int msgLength){
+	
+	
+	#ifdef DEBUG
+	Serial.print(msgLength);
+	Serial.println(" byte in");
+	#endif
+
+	// copy all bytes to have them available at once
+	for(uint8_t i=0; Wire.available(); i++){ // loop through all
+		m_receive_buffer[i]=Wire.read();
 		
-		//############# HEADER ###############
-		if(m_state==ST_CMD){		// First byte, what shall we do?
-			if(c == CMD_SET){			// setup a channel
-				m_state = ST_SET_CHANNEL;
-			} else if(c == CMD_GET){		// get a value
-				m_state = ST_GET_CHANNEL;
-			} else if(c == CMD_CONFIG) { // configure a channel
-				m_state = ST_CONFIG_CHANNEL;
-			} else if(c == CMD_RESET) { //call reset
-				resetFunc();  
-			}
-		} else if(m_state==ST_SET_CHANNEL || m_state==ST_GET_CHANNEL || m_state==ST_CONFIG_CHANNEL ){ // Second byte: we need to know what channel we are talking about
-			m_channel = c;
-			// distinguish where we have to go, depending on our current state
-			if(m_state==ST_CONFIG_CHANNEL) {	// configuration		
-				m_state=ST_CONFIG_MODE;	
-			} else {														// set or get a value, we can resurrect that from the mode, the channel is in :) 
-				// SET a channel  (outputs)
-				if(m_modes[m_channel]==MODE_PWM){	
-					m_state=ST_SET_SINGLE_VALUE;	
-				} else if(m_modes[m_channel]==MODE_DIGITAL_OUTPUT){
-					m_state=ST_SET_SINGLE_VALUE;
-				} else if(m_modes[m_channel]==MODE_SINGLE_COLOR_WS2812){
-					m_state=ST_SET_VALUE_R;
-				} else if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){
-					m_state=ST_SET_OFFSET;
-				} 
-				// SET a channel ( pull up on inputs)
-				else if(m_state==ST_SET_CHANNEL && m_modes[m_channel]==MODE_DIGITAL_INPUT){
-					m_state=ST_SET_SINGLE_VALUE;
-				} else if(m_state==ST_SET_CHANNEL && m_modes[m_channel]==MODE_ANALOG_INPUT){
-					m_state=ST_SET_SINGLE_VALUE;
-				} 
-				// GET a channel (inputs)
-				else if(m_state==ST_GET_CHANNEL && m_modes[m_channel]==MODE_DIGITAL_INPUT){
-					get_value();
-					m_state=ST_CMD;
-				} else if(m_state==ST_GET_CHANNEL && m_modes[m_channel]==MODE_ANALOG_INPUT){
-					get_value();
-					m_state=ST_CMD;
-				} 
-			}
-		} 
-		//############# HEADER ###############
-		//############# jump here for configuration ###############
-		else if(m_state==ST_CONFIG_MODE){
-			if(c<=MAX_MODE){
-				m_modes[m_channel]=c;
-				if(c==MODE_SINGLE_COLOR_WS2812 || c==MODE_MULTI_COLOR_WS2812){
-					m_state=ST_WS2812_NUM;
-				} else {
-					m_state=ST_WAIT;
-					config_pin(m_channel);
-				}
-			} else {
-				m_state=ST_WAIT;  // illegal mode, go back to wait state
-			}
-		} else if(m_state==ST_WS2812_NUM){
-			m_ws_count[m_channel-9]=c; // TODO new board
-			m_state=ST_WAIT;
-			config_pin(m_channel);
-		}
-		//############# jump here for configuration ###############	
-		//############ jump here for setting a value #############
-		else if(m_state==ST_SET_OFFSET){	// shift the start LED to the offset char
-			m_current_led=c;		
-			m_state=ST_SET_VALUE_R;
-		} else if(m_state==ST_SET_SINGLE_VALUE){		// pwm
-			m_value=c;
-			m_state=ST_WAIT;
-#ifdef DEBUG
-			Serial.println("call set_Value");
-#endif
-			set_value();
-		} else if(m_state==ST_SET_VALUE_R){	// STEP1 for MODE_SINGLE_COLOR_WS2812 or MODE_MULTI_COLOR_WS2812
-			m_value_r=c;
-			m_state=ST_SET_VALUE_G;
-		} else if(m_state==ST_SET_VALUE_G){	// STEP 2
-			m_value_g=c;
-			m_state=ST_SET_VALUE_B;
-		} else if(m_state==ST_SET_VALUE_B){	// STEP 3
-			m_value_b=c;
-			set_value();	// save color and sync
-			if(m_modes[m_channel]==MODE_MULTI_COLOR_WS2812){ 	// maybe we have to go back to red
-				if(m_current_led>=m_ws_count[m_channel-9] || m_current_led%8==0){ // set_value() has already increase: m_current_led++, are we done, (at least with this block?)
-					m_state=ST_WAIT; // done
-				} else {
-					m_state=ST_SET_VALUE_R; // resume to STEP 1
-				}
-			} else { // mode ws2812 .. single color, done!
-				m_state=ST_WAIT;
-			}
-		} 
-		//############ jump here for setting a value #############
-		//############ start #############
-		// if we are in a "invalid" state (or ST_WAIT),
-		// we will wait for the START_BYTE
-		else if(c==START_BYTE){
-			m_state=ST_CMD;
-		}
-		//############ start #############
+		#ifdef DEBUG
+		Serial.print(m_receive_buffer[i],HEX);
+		Serial.print(",");
+		#endif
 	}
+
+	#ifdef DEBUG
+	Serial.println("");
+	#endif
+	m_receive_length = msgLength;
 }
 //========================= i2c input statemachine =========================//
+
+//================================ parse,  =================================//
+// receiveEvent is callen in interrupt
+// if we block to long, the i2c interface will be busy
+// therefore copy it to a new buffer and process it in the userspace
+// this will free the i2c buffer to receive a new message "in parallel"
+
+void parse(){
+	// only read it if there is a magic startbyte
+	if(m_receive_buffer[0] == START_BYTE){
+		/////////////////////////////  RESET CONFIGURATION /////////////////////////////
+		if(m_receive_buffer[1] == CMD_RESET){
+			resetFunc();  
+		} 
+		/////////////////////////////  RESET CONFIGURATION /////////////////////////////
+		////////////////////////////  SIMPLE SETTING A VALUE ///////////////////////////
+		else if(m_receive_buffer[1] == CMD_SET_SIMPLE && m_receive_length>=4){
+			m_channel = m_receive_buffer[2];
+
+			//## digital write for output or pull ups or PWM ##
+			if(m_pins[m_channel].m_mode==MODE_DIGITAL_OUTPUT || m_pins[m_channel].m_mode==MODE_DIGITAL_INPUT || m_pins[m_channel].m_mode==MODE_ANALOG_INPUT || m_pins[m_channel].m_mode==MODE_PWM || m_pins[m_channel].m_mode==MODE_PWM_DIMMING){
+				m_pins[m_channel].m_value = m_receive_buffer[3];
+
+				#ifdef DEBUG
+				Serial.print("digitalWrite ");
+				Serial.print(m_pins[m_channel].m_value);
+				Serial.print(" at pin ");
+				Serial.println(m_pins[m_channel].m_arduino_pin,DEC);
+				#endif		
+
+				
+				digitalWrite(m_pins[m_channel].m_arduino_pin,m_pins[m_channel].m_value);
+				
+				// end dimming if we override it with hard value
+				if( m_pins[m_channel].m_mode==MODE_PWM_DIMMING){
+					m_pins[m_channel].m_mode = MODE_PWM;
+				};
+			} 
+
+			//## write a pwm signal ##
+			else if(m_pins[m_channel].m_mode==MODE_PWM || m_pins[m_channel].m_mode==MODE_PWM_DIMMING){ 
+				m_pins[m_channel].m_value = m_receive_buffer[3];
+
+				#ifdef DEBUG
+				Serial.print("dutycycle of ");
+				Serial.print(m_pins[m_channel].m_value);
+				Serial.print(" at pin ");
+				Serial.println(m_pins[m_channel].m_arduino_pin,DEC);
+				#endif
+
+				analogWrite(m_pins[m_channel].m_arduino_pin,m_pins[m_channel].m_value);
+				
+				// end dimming if we override it with hard value
+				if( m_pins[m_channel].m_mode==MODE_PWM_DIMMING){
+					m_pins[m_channel].m_mode = MODE_PWM;
+				};
+			}
+
+			//## single color for all LEDs ##
+			else if(m_pins[m_channel].m_mode==MODE_SINGLE_COLOR_WS2812 && m_receive_length>=6){
+				value.r = m_receive_buffer[3]; 
+				value.g = m_receive_buffer[4]; 
+				value.b = m_receive_buffer[5]; // RGB Value -> Blue
+
+				#ifdef DEBUG
+				Serial.print("single color for ");			
+				Serial.print(m_pins[m_channel].m_ws2812_count);
+				Serial.println(" leds");
+				#endif
+
+				for(uint8_t i=0; i<m_pins[m_channel].m_ws2812_count; i++){
+					m_pins[m_channel].m_ws2812_pointer->set_crgb_at(i, value); // Set value at all LEDs
+				}
+				m_pins[m_channel].m_ws2812_pointer->sync(); // Sends the value to the LED
+			} 
+
+			//## multiple values, for each LED value ##
+			else if(m_pins[m_channel].m_mode==MODE_MULTI_COLOR_WS2812){
+				uint8_t m_current_led=m_receive_buffer[3];
+				for(uint8_t i=4; i<m_receive_length; i+=3){
+					value.r = m_receive_buffer[i+0]; 
+					value.g = m_receive_buffer[i+1]; 
+					value.b = m_receive_buffer[i+2]; // RGB Value -> Blue
+					m_pins[m_channel].m_ws2812_pointer->set_crgb_at(m_current_led, value); // Set value at LED found at RUNNING INDEX
+					m_current_led++;
+				}
+
+				if(m_current_led>=m_pins[m_channel].m_ws2812_count){
+					m_pins[m_channel].m_ws2812_pointer->sync(); // Sends the value to the LED only when all value are known
+				}	
+			}
+
+		} 
+		////////////////////////////  SIMPLE SETTING A VALUE ///////////////////////////
+		///////////////////////////////  READING A VALUE ///////////////////////////////
+		else if(m_receive_buffer[1] == CMD_GET && m_receive_length>=3){
+			m_channel = m_receive_buffer[2];
+			
+			#ifdef DEBUG
+			Serial.print("Reading pin");
+			Serial.println(m_pins[m_channel].m_arduino_pin,DEC);
+			#endif
+				
+			if(m_pins[m_channel].m_mode == MODE_DIGITAL_INPUT){
+				m_response_buffer[0] = digitalRead(m_pins[m_channel].m_arduino_pin);
+				m_response_length = 1;
+
+				#ifdef DEBUG
+				Serial.print("digital read value: ");
+				Serial.println(m_response_buffer[0]);
+				#endif
+
+			} else 	if(m_pins[m_channel].m_mode == MODE_ANALOG_INPUT){
+				m_pins[m_channel].m_value=analogRead(m_pins[m_channel].m_arduino_pin);
+				m_response_buffer[1] =  m_pins[m_channel].m_value >> 8;
+				m_response_buffer[0] =  m_pins[m_channel].m_value & 0xff;
+				m_response_length = 2;
+
+				#ifdef DEBUG
+				Serial.print("Value: ");
+				Serial.println(m_pins[m_channel].m_value);
+				Serial.print("Sending as ");
+				Serial.print(m_response_buffer[1]);
+				Serial.print("/");
+				Serial.println(m_response_buffer[0]);
+				#endif
+
+			}
+			
+
+			#ifdef DEBUG
+			Serial.print("Buffer: ");
+			Serial.println(m_response_length);
+			#endif
+			
+		} 
+		///////////////////////////////  READING A VALUE ///////////////////////////////
+		///////////////////////////////  CONFIGURE A PIN ///////////////////////////////
+		else if(m_receive_buffer[1] == CMD_CONFIG && m_receive_length>=4){
+			m_channel = m_receive_buffer[2];
+			m_pins[m_channel].m_mode = m_receive_buffer[3];
+
+			if( m_pins[m_channel].m_mode == MODE_SINGLE_COLOR_WS2812 ||  m_pins[m_channel].m_mode == MODE_MULTI_COLOR_WS2812 ){
+				m_pins[m_channel].m_ws2812_count = m_receive_buffer[4]; 
+			}
+			config_pin();
+		}
+		///////////////////////////////  CONFIGURE A PIN ///////////////////////////////
+		///////////////////////////////  DIMM THE PIN ///////////////////////////////
+		else if(m_receive_buffer[1] == CMD_DIMM && m_receive_length>=5){
+			m_channel = m_receive_buffer[2];
+			if(m_pins[m_channel].m_mode==MODE_PWM){
+				m_pins[m_channel].m_target_value = max(m_receive_buffer[3], 99); 	// 0-99 = 0-100%
+				m_pins[m_channel].m_dimm_interval = m_receive_buffer[4];					// ms
+				m_pins[m_channel].m_mode = MODE_PWM_DIMMING;
+				m_pins[m_channel].m_next_action  = millis();
+			 }
+		}
+		///////////////////////////////  DIMM THE PIN ///////////////////////////////
+	}
+
+	#ifdef DEBUG
+	Serial.println("end");
+	#endif
+};
+//================================ parse,  =================================//
+
+
 //========================= i2c response =========================//
 // the arduino wire lib is clearing the i2c buffer whenever it receives the SLAVE READ from the I2C Master
-// therefore we can NOT preset the tx buffer, but have to do it after the readcall.
-// this readcall triggers the onRequestService, to whom we've subscribed. So filling the buffer now should work
+// therefore we can NOT pre-set the tx buffer, but have to do it after this read-call.
+// this read-call triggers the onRequestService, to whom we've subscribed. So filling the buffer now should work
 // remember to set the MAX_RESPONSE_LENGTH according to your answer. 
 void requestEvent(){
-#ifdef DEBUG
+	
+	#ifdef DEBUG
 	Serial.println("Request event");
-#endif
+	#endif
+	
 	if(m_response_length && m_response_length<MAX_RESPONSE_LENGTH){
-#ifdef DEBUG
+
+		#ifdef DEBUG
 		Serial.println("writing");
 		for(int i=0; i<m_response_length;i++){
 			Serial.print(m_response_buffer[i]);
 		}
-#endif
+		#endif
+
 		Wire.write(m_response_buffer,m_response_length);
 		m_response_length = 0;
 	}
