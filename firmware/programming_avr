@@ -5,20 +5,22 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-INIT_CTRL=0
-SETUP_ARDUINO=0
+INIT_CTRL="0"
+SETUP_ARDUINO="0"
 
-while [[ $# > 1 ]]
+
+while [[ $# > 0 ]]
 do
+
 key="$1"
 
 case $key in
     -i|--init)
-    INIT_CTRL=1
+    	INIT_CTRL=1
 	echo "Flashing bootloader via MK2"
     ;;
     -s|--setup_arduino)
-    SETUP_ARDUINO=1
+    	SETUP_ARDUINO=1
 	echo "Adding entry to ardunio ide. I will close it, once i'm done"
     ;;
     *)
@@ -36,6 +38,7 @@ if [[ "$INIT_CTRL" == "1" ]]; then
 	avrdude -c avrisp2 -p m328p -U lfuse:w:0xe2:m  -B 50						# set fuse for slow avr
 	avrdude -c avrisp2 -p m328p -U lfuse:w:0xe2:m -U hfuse:w:0xda:m -B 1				# with bootloader
 	avrdude -c avrisp2 -p m328p -U lfuse:r:-:i -v							# read fuse
+	avrdude -c avrisp2 -p m328p -s -Uflash:w:bootloader/optiboot_atmega328.hex:a 
 fi
 
 
