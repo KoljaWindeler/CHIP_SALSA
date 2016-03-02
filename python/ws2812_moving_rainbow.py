@@ -3,8 +3,8 @@ import time
 
 
 # set pin 11 as 20 ws2812, all with unique colors
-LC=6
-ROUNDS=10
+LC=24
+ROUNDS=100
 DELAY=0.02
 pin = 6
 
