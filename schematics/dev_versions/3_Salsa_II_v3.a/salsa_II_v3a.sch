@@ -9978,10 +9978,10 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <parts>
 <part name="U1" library="SparkFun-DigitalIC" deviceset="ATMEGA168" device=""/>
 <part name="JP2" library="pinhead" deviceset="PINHD-2X3" device=""/>
-<part name="Q2" library="transistor-power" deviceset="NMOSFET_SMD_223" device="" value="PMV20EN"/>
-<part name="Q3" library="transistor-power" deviceset="NMOSFET_SMD_223" device="" value="PMV20EN"/>
-<part name="Q4" library="transistor-power" deviceset="NMOSFET_SMD_223" device="" value="PMV20EN"/>
-<part name="Q5" library="transistor-power" deviceset="NMOSFET_SMD_223" device="" value="PMV20EN"/>
+<part name="Q2" library="transistor-power" deviceset="NMOSFET_SMD_223" device="" value="DMN6068SE-13"/>
+<part name="Q3" library="transistor-power" deviceset="NMOSFET_SMD_223" device="" value="DMN6068SE-13"/>
+<part name="Q4" library="transistor-power" deviceset="NMOSFET_SMD_223" device="" value="DMN6068SE-13"/>
+<part name="Q5" library="transistor-power" deviceset="NMOSFET_SMD_223" device="" value="DMN6068SE-13"/>
 <part name="PAD_G1" library="wirepad" deviceset="3,17/1,3" device=""/>
 <part name="PAD_VIN" library="wirepad" deviceset="3,17/1,3" device=""/>
 <part name="PAD0" library="wirepad" deviceset="3,17/1,3" device=""/>
