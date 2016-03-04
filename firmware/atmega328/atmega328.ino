@@ -49,25 +49,25 @@ void setup(){
 	uint8_t i2c_adder = ((PINB ^ 0xff)>>6);
 
 	// prepare
-	//set(bool analog_in, bool digital, bool pwm, bool ws2812, uint8_t arduino_pin);
-	m_pins[0].set(false, true, true, true, 10);
-	m_pins[1].set(false, true, true, true, 9);
-	m_pins[2].set(false, true, true, true, 6);
-	m_pins[3].set(false, true, true, true, 5);
-	m_pins[4].set(true, true, true, false, 15);
-	m_pins[5].set(false, false, false, false, 0xff);
-	m_pins[6].set(false, true, false, true, 2);
-	m_pins[7].set(false, true, false, true, 11);
-	m_pins[8].set(true, true, true, false, 16);
-	m_pins[9].set(false, true, false, true, 3);
-	m_pins[10].set(true, true, true, false, 17);
-	m_pins[11].set(false, true, false, true, 8);
-	m_pins[12].set(false, true, false, true, 7);
+	//set( 				  ana, digi,   pwm,  ws,   Arduino_pin);
+	m_pins[0].set(false, true, true, true, 10); 		// PB2, P0 PWM or left motor driver (P0/1) En signal
+	m_pins[1].set(false, true, true, true, 9); 		// PB1, P1 PWM
+	m_pins[2].set(false, true, true, true, 6); 		// PD6, P2 PWM
+	m_pins[3].set(false, true, true, true, 5); 		// PD5, P3 PWM
+	m_pins[4].set(true, true, false, false, 15); 		// PC1, P4 
+	m_pins[5].set(false, false, false, false, 0xff); 	// direct to CHIP P7 pin
+	m_pins[6].set(false, true, true, true, 2); 		// PD2, P6
+	m_pins[7].set(false, true, true, true, 11); 		// PB3, to onboard ws2812 / LED
+	m_pins[8].set(true, true, false, false, 16); 		// PC2, PAD8 and jumper to powerdown
+	m_pins[9].set(false, true, true, true, 3); 		// PD3, PAD9 and right motor driver (P2/3) En signal
+	m_pins[10].set(true, true, false, false, 17); 	// PC3, PAD10
+	m_pins[11].set(false, true, true, true, 8); 		// PB0, PAD11
+	m_pins[12].set(false, true, true, true, 7); 		// PD7, PAD12
 
-	m_pins[13].set(false, true, true, false, 12); // internal pin to motor driver
-	m_pins[14].set(false, true, true, false, 13); // internal pin to motor driver
-	m_pins[15].set(false, true, true, false, 4);  // internal pin to CHIP
-	m_pins[16].set(false, true, true, false, 14); // internal pin to LED
+	m_pins[13].set(false, true, false, false, 12); 	// PB4, internal pin to motor driver, direction pins, right side (P2/3), function limited
+	m_pins[14].set(false, true, false, false, 13); 	// PB5, internal pin to motor driver,  direction pins, left side (P0/1), function limited
+	m_pins[15].set(false, true, false, false, 4);  	// PD4, internal pin to CHIP, PWM capability, but no point driving the CHIP with a PWM
+	m_pins[16].set(false, true, false, false, 14); 	// PC0, internal pin switch, functionality restricted
 
 	
 	Wire.begin(I2C_ADDRESS+i2c_adder);                // join i2c bus with address #4,5,6 or 7
