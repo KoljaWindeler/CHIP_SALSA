@@ -132,20 +132,40 @@ class connection:
 		self.modes[pin]=self.MODE_ANALOG_INPUT
 		return 0
 ######################################### PWM frequency ################################################
-	def setup_pwm_freq(self, pin, divisor):
-		if(pin == 5 or pin == 6 or pin == 9 or pin == 10):
-			if(divisor!=1 and divisor!=8 and divisor!=64 and divisor!=256 and divisor!=1024):
-				self.warn("Divisor "+str(divisor)+" not available")
-				return -1
-		elif(pin == 3 or pin == 11):
-			if(divisor!=1 and divisor!=8 and divisor!=32 and divisor!=64 and divisor!=128 and divisor!=256 and divisor!=1024):
-				self.warn("Divisor "+str(divisor)+" not available")
-				return -1
-		else:
+	def setup_pwm_freq(self, pin, freq):
+		# timer 0
+		#[2]: 31250, 3906, 488, 122, 30,  // 1,8,64,256,1024 // untested pwm channel p2
+		#[3]: 31250, 3906, 488, 122, 30,  // 1,8,64,256,1024 // untested pwm channel p3
+
+		# timer 1
+		#[1]: 15625, 1953, 244, 61, 15 // 1,2,3,4,5 // untested pwm channel p1
+		#[0]: 15625, 1953, 244, 61, 15 // 1,2,3,4,5 // untested pwm channel p0
+
+		# timer 2
+		#[7]: 15625, 1953, 488, 244, 122, 61, 15 // 1,8,32,64,128,256,1024 // 1,2,3,4,5,6,7 // motor left tested
+		#[9]: 15625, 1953, 488, 244, 122, 61, 15 // 1,8,32,64,128,256,1024 // 1,2,3,4,5,6,7 // motor right tested
+		a_freq = []
+		a_freq.append([[15625,1953,244,61,15]])
+		a_freq.append([[15625,1953,244,61,15]])
+		a_freq.append([[31250,3906,488,122,30]])
+		a_freq.append([[31250,3906,488,122,30]])
+		a_freq.append([])
+		a_freq.append([])
+		a_freq.append([])
+		a_freq.append([[15625,1953,488,244,122,61,15]])
+		a_freq.append([[15625,1953,488,244,122,61,15]])
+
+
+		if(pin > len(a_freq) or pin <0):
 			self.warn("pin not available for pwm manipulation")
 			return -1
-
-		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_PWM_FREQ, pin, int(divisor/256), divisor%256))	
+		elif(freq in a_freq[pin]):
+			divisor = a_freq.index(freq)+1
+			print("found the freq, it is divisor "+str(divisor))
+		else:
+			self.warn("Frequency not available. For this pin the following freq are possible: "+str(a_freq[pin]))
+			return -1
+		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_PWM_FREQ, pin, divisor)	
 #######################################################################################################
 ######################################## SETUP #########################################################
 #######################################################################################################
