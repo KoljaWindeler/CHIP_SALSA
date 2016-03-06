@@ -8,6 +8,7 @@
 #define CMD_GET			0xF2
 #define CMD_RESET		0xF3
 #define CMD_DIMM		0xF4
+#define CMD_PWM_FREQ		0xF5
 
 #define MODE_PWM			0x01
 #define MODE_ANALOG_INPUT		0x02
@@ -201,6 +202,52 @@ void config_pin(){
 	}
 }
 //========================= setup - on-the-fly =========================//
+//========================= setup pwm - on-the-fly =========================//
+/*
+* The base frequency for pins 3, 9, 10, and 11 is 31250 Hz
+* The base frequency for pins 5 and 6 is 62500 Hz. 
+*
+* The divisors available on pins 5, 6, 9 and 10 are: 1, 8, 64, 256, and 1024.
+* The divisors available on pins 3 and 11 are: 1, 8, 32, 64, 128, 256, and 1024
+*
+*   - Pins 5 and 6 are paired on timer0
+*   - Pins 9 and 10 are paired on timer1
+*   - Pins 3 and 11 are paired on timer2
+*
+*   - Changes on pins 3, 5, 6, or 11 may cause the delay() and millis() functions to stop working
+*   - Changes on pins 9 or 10 will cause the Servo library to function incorrectly.
+*/
+void setPwmFrequency(int pin, int divisor) {
+  byte mode;
+  if(pin == 5 || pin == 6 || pin == 9 || pin == 10) {
+    switch(divisor) {
+      case 1: mode = 0x01; break;
+      case 8: mode = 0x02; break;
+      case 64: mode = 0x03; break;
+      case 256: mode = 0x04; break;
+      case 1024: mode = 0x05; break;
+      default: return;
+    }
+    if(pin == 5 || pin == 6) {
+      TCCR0B = TCCR0B & 0b11111000 | mode;
+    } else {
+      TCCR1B = TCCR1B & 0b11111000 | mode;
+    }
+  } else if(pin == 3 || pin == 11) {
+    switch(divisor) {
+      case 1: mode = 0x01; break;
+      case 8: mode = 0x02; break;
+      case 32: mode = 0x03; break;
+      case 64: mode = 0x04; break;
+      case 128: mode = 0x05; break;
+      case 256: mode = 0x06; break;
+      case 1024: mode = 0x7; break;
+      default: return;
+    }
+    TCCR2B = TCCR2B & 0b11111000 | mode;
+  }
+}
+//========================= setup pwm - on-the-fly =========================//
 //========================= i2c input statemachine =========================//
 // function that executes whenever data is received from master
 // this function is registered as an event, see setup()
@@ -244,6 +291,16 @@ void parse(){
 		} 
 		/////////////////////////////  RESET CONFIGURATION /////////////////////////////
 		////////////////////////////  SIMPLE SETTING A VALUE ///////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_SET_SIMPLE
+		// [2] DIP pin
+		// [3] value or value_r
+		// opt: [4] value_g
+		// opt: [5] value_b
+		// opt: [3+0+3*i] value_r
+		// opt: [3+1+3*i] value_g
+		// opt: [3+2+3*i] value_b
+
 		else if(m_receive_buffer[1] == CMD_SET_SIMPLE && m_receive_length>=4){
 			m_channel = m_receive_buffer[2];
 
@@ -323,6 +380,9 @@ void parse(){
 		} 
 		////////////////////////////  SIMPLE SETTING A VALUE ///////////////////////////
 		///////////////////////////////  READING A VALUE ///////////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_GET
+		// [2] DIP pin
 		else if(m_receive_buffer[1] == CMD_GET && m_receive_length>=3){
 			m_channel = m_receive_buffer[2];
 			
@@ -366,6 +426,10 @@ void parse(){
 		} 
 		///////////////////////////////  READING A VALUE ///////////////////////////////
 		///////////////////////////////  CONFIGURE A PIN ///////////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_SET_SIMPLE
+		// [2] DIP pin
+		// [3] mode
 		else if(m_receive_buffer[1] == CMD_CONFIG && m_receive_length>=4){
 			m_channel = m_receive_buffer[2];
 			m_pins[m_channel].m_mode = m_receive_buffer[3];
@@ -377,6 +441,11 @@ void parse(){
 		}
 		///////////////////////////////  CONFIGURE A PIN ///////////////////////////////
 		///////////////////////////////  DIMM THE PIN ///////////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_DIMM
+		// [2] DIP pin
+		// [3] target value 0 to 99
+		// [4] dimm intervall in ms
 		else if(m_receive_buffer[1] == CMD_DIMM && m_receive_length>=5){
 			m_channel = m_receive_buffer[2];
 			if(m_pins[m_channel].m_mode==MODE_PWM){
@@ -397,6 +466,19 @@ void parse(){
 			 }
 		}
 		///////////////////////////////  DIMM THE PIN ///////////////////////////////
+		/////////////////////////////// SETUP PWM FREQ //////////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_PWM_FREQ
+		// [2] DIP pin
+		// [3] divisior high
+		// [4] divisior low
+		else if(m_receive_buffer[1] == CMD_PWM_FREQ && m_receive_length>=5){
+			uint16_t divisor = m_receive_buffer[3];
+			divisor = (divisor << 8) | m_receive_buffer[4];
+			m_channel = m_receive_buffer[2];
+			setPwmFrequency(m_channel, divisor);
+		}
+		/////////////////////////////// SETUP PWM FREQ //////////////////////////////
 	}
 
 	#ifdef DEBUG

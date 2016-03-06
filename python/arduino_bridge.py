@@ -28,6 +28,7 @@ class connection:
 	CMD_GET		= 0xF2
 	CMD_RESET	= 0xF3
 	CMD_DIMM	= 0xF4
+	CMD_PWM_FREQ 	= 0xF5
 
 	MODE_PWM		= 0x01
 	MODE_ANALOG_INPUT	= 0x02
@@ -130,6 +131,21 @@ class connection:
 		time.sleep(self.setup_delay)
 		self.modes[pin]=self.MODE_ANALOG_INPUT
 		return 0
+######################################### PWM frequency ################################################
+	def setup_pwm_freq(self, pin, divisor):
+		if(pin == 5 or pin == 6 or pin == 9 or pin == 10):
+			if(divisor!=1 and divisor!=8 and divisor!=64 and divisor!=256 and divisor!=1024):
+				self.warn("Divisor "+str(divisor)+" not available")
+				return -1
+		elif(pin == 3 or pin == 11):
+			if(divisor!=1 and divisor!=8 and divisor!=32 and divisor!=64 and divisor!=128 and divisor!=256 and divisor!=1024):
+				self.warn("Divisor "+str(divisor)+" not available")
+				return -1
+		else:
+			self.warn("pin not available for pwm manipulation")
+			return -1
+
+		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_PWM_FREQ, pin, int(divisor/256), divisor%256))	
 #######################################################################################################
 ######################################## SETUP #########################################################
 #######################################################################################################
