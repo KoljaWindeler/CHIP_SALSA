@@ -162,7 +162,6 @@ class connection:
 			return -1
 		elif(freq in a_freq[pin]):
 			divisor = (a_freq[pin].index(freq))+1
-			print("found the freq, it is divisor "+str(divisor))
 		else:
 			self.warn("Frequency not available. For this pin the following freq are possible: "+str(a_freq[pin]))
 			return -1
