@@ -8,6 +8,7 @@
 #define CMD_GET			0xF2
 #define CMD_RESET		0xF3
 #define CMD_DIMM		0xF4
+#define CMD_PWM_FREQ		0xF5
 
 #define MODE_PWM			0x01
 #define MODE_ANALOG_INPUT		0x02
@@ -49,25 +50,29 @@ void setup(){
 	uint8_t i2c_adder = ((PINB ^ 0xff)>>6);
 
 	// prepare
-	//set( 				  ana, digi,   pwm,  ws,   Arduino_pin);
-	m_pins[0].set(false, true, true, true, 10); 		// PB2, P0 PWM or left motor driver (P0/1) En signal
-	m_pins[1].set(false, true, true, true, 9); 		// PB1, P1 PWM
-	m_pins[2].set(false, true, true, true, 6); 		// PD6, P2 PWM
-	m_pins[3].set(false, true, true, true, 5); 		// PD5, P3 PWM
-	m_pins[4].set(true, true, false, false, 15); 		// PC1, P4 
-	m_pins[5].set(false, false, false, false, 0xff); 	// direct to CHIP P7 pin
-	m_pins[6].set(false, true, true, true, 2); 		// PD2, P6
-	m_pins[7].set(false, true, true, true, 11); 		// PB3, to onboard ws2812 / LED
-	m_pins[8].set(true, true, false, false, 16); 		// PC2, PAD8 and jumper to powerdown
-	m_pins[9].set(false, true, true, true, 3); 		// PD3, PAD9 and right motor driver (P2/3) En signal
-	m_pins[10].set(true, true, false, false, 17); 	// PC3, PAD10
-	m_pins[11].set(false, true, true, true, 8); 		// PB0, PAD11
-	m_pins[12].set(false, true, true, true, 7); 		// PD7, PAD12
+	//set( 		ana,  digi,  pwm,   ws,   Arduino_pin);
+	// screw outputs
+	m_pins[0].set( false, true,  true,  true,  10); 	// PB2, P0 PWM or left motor driver (P0/1) En signal
+	m_pins[1].set( false, true,  true,  true,  9); 		// PB1, P1 PWM
+	m_pins[2].set( false, true,  true,  true,  6); 		// PD6, P2 PWM
+	m_pins[3].set( false, true,  true,  true,  5); 		// PD5, P3 PWM
+	m_pins[4].set( true,  true,  false, false, 15); 	// PC1, P4 analog input
+	m_pins[5].set( false, false, false, false, 0xff); 	//      P5 direct to CHIP P7 pin
+	m_pins[6].set( false, true,  false, true,  2); 		// PD2, P6 digital and ws2812 pin
+	m_pins[7].set( false, true,  true,  true,  11); 	// PB3, P7 and to onboard ws2812 and to general LED
 
-	m_pins[13].set(false, true, false, false, 12); 	// PB4, internal pin to motor driver, direction pins, right side (P2/3), function limited
-	m_pins[14].set(false, true, false, false, 13); 	// PB5, internal pin to motor driver,  direction pins, left side (P0/1), function limited
-	m_pins[15].set(false, true, false, false, 4);  	// PD4, internal pin to CHIP, PWM capability, but no point driving the CHIP with a PWM
-	m_pins[16].set(false, true, false, false, 14); 	// PC0, internal pin switch, functionality restricted
+	// some pins spread over the board
+	m_pins[8].set( true,  true,  false, false, 16); 	// PC2, PAD8 and jumper to powerdown
+	m_pins[9].set( false, true,  true,  true,  3); 		// PD3, PAD9 and right motor driver (P2/3) En signal
+	m_pins[10].set(true,  true,  false, false, 17); 	// PC3, PAD10
+	m_pins[11].set(false, true,  false, true,  8); 		// PB0, PAD11
+	m_pins[12].set(false, true,  false, true,  7); 		// PD7, PAD12
+
+	// internal pins
+	m_pins[13].set(false, true,  false, false, 12); 	// PB4, internal pin to motor driver, direction pins, right side (P2/3), function limited
+	m_pins[14].set(false, true,  false, false, 13); 	// PB5, internal pin to motor driver,  direction pins, left side (P0/1), function limited
+	m_pins[15].set(false, true,  false, false, 4);  	// PD4, internal pin to CHIP, e.g. interrupts
+	m_pins[16].set(false, true,  false, false, 14); 	// PC0, internal pin, to optional switch
 
 	
 	Wire.begin(I2C_ADDRESS+i2c_adder);                // join i2c bus with address #4,5,6 or 7
@@ -201,6 +206,31 @@ void config_pin(){
 	}
 }
 //========================= setup - on-the-fly =========================//
+//========================= setup pwm - on-the-fly =========================//
+/*
+# timer 0
+#[2]: 31250, 3906, 488, 122, 30,  // 1,8,64,256,1024 // untested pwm channel p2
+#[3]: 31250, 3906, 488, 122, 30,  // 1,8,64,256,1024 // untested pwm channel p3
+
+# timer 1
+#[1]: 15625, 1953, 244, 61, 15 // 1,2,3,4,5 // untested pwm channel p1
+#[0]: 15625, 1953, 244, 61, 15 // 1,2,3,4,5 // untested pwm channel p0
+
+# timer 2
+#[7]: 15625, 1953, 488, 244, 122, 61, 15 // 1,8,32,64,128,256,1024 // 1,2,3,4,5,6,7 // motor left tested
+#[9]: 15625, 1953, 488, 244, 122, 61, 15 // 1,8,32,64,128,256,1024 // 1,2,3,4,5,6,7 // motor right tested
+*/
+void setPwmFrequency(int pin, int divisor) {
+	byte mode;
+	if(pin == 2 || pin == 3) {
+		TCCR0B = TCCR0B & 0b11111000 | divisor;
+	} else if (pin == 0 || pin == 1){
+		TCCR1B = TCCR1B & 0b11111000 | divisor;
+	} else if(pin == 7 || pin == 9) {
+		TCCR2B = TCCR2B & 0b11111000 | divisor;
+	}
+}
+//========================= setup pwm - on-the-fly =========================//
 //========================= i2c input statemachine =========================//
 // function that executes whenever data is received from master
 // this function is registered as an event, see setup()
@@ -244,11 +274,21 @@ void parse(){
 		} 
 		/////////////////////////////  RESET CONFIGURATION /////////////////////////////
 		////////////////////////////  SIMPLE SETTING A VALUE ///////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_SET_SIMPLE
+		// [2] DIP pin
+		// [3] value or value_r
+		// opt: [4] value_g
+		// opt: [5] value_b
+		// opt: [3+0+3*i] value_r
+		// opt: [3+1+3*i] value_g
+		// opt: [3+2+3*i] value_b
+
 		else if(m_receive_buffer[1] == CMD_SET_SIMPLE && m_receive_length>=4){
 			m_channel = m_receive_buffer[2];
 
 			//## digital write for output or pull ups or PWM ##
-			if(m_pins[m_channel].m_mode==MODE_DIGITAL_OUTPUT || m_pins[m_channel].m_mode==MODE_DIGITAL_INPUT || m_pins[m_channel].m_mode==MODE_ANALOG_INPUT || m_pins[m_channel].m_mode==MODE_PWM || m_pins[m_channel].m_mode==MODE_PWM_DIMMING){
+			if(m_pins[m_channel].m_mode==MODE_DIGITAL_OUTPUT || m_pins[m_channel].m_mode==MODE_DIGITAL_INPUT || m_pins[m_channel].m_mode==MODE_ANALOG_INPUT){
 				m_pins[m_channel].m_value = m_receive_buffer[3];
 
 				#ifdef DEBUG
@@ -323,6 +363,9 @@ void parse(){
 		} 
 		////////////////////////////  SIMPLE SETTING A VALUE ///////////////////////////
 		///////////////////////////////  READING A VALUE ///////////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_GET
+		// [2] DIP pin
 		else if(m_receive_buffer[1] == CMD_GET && m_receive_length>=3){
 			m_channel = m_receive_buffer[2];
 			
@@ -366,6 +409,10 @@ void parse(){
 		} 
 		///////////////////////////////  READING A VALUE ///////////////////////////////
 		///////////////////////////////  CONFIGURE A PIN ///////////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_SET_SIMPLE
+		// [2] DIP pin
+		// [3] mode
 		else if(m_receive_buffer[1] == CMD_CONFIG && m_receive_length>=4){
 			m_channel = m_receive_buffer[2];
 			m_pins[m_channel].m_mode = m_receive_buffer[3];
@@ -377,6 +424,11 @@ void parse(){
 		}
 		///////////////////////////////  CONFIGURE A PIN ///////////////////////////////
 		///////////////////////////////  DIMM THE PIN ///////////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_DIMM
+		// [2] DIP pin
+		// [3] target value 0 to 99
+		// [4] dimm intervall in ms
 		else if(m_receive_buffer[1] == CMD_DIMM && m_receive_length>=5){
 			m_channel = m_receive_buffer[2];
 			if(m_pins[m_channel].m_mode==MODE_PWM){
@@ -397,6 +449,17 @@ void parse(){
 			 }
 		}
 		///////////////////////////////  DIMM THE PIN ///////////////////////////////
+		/////////////////////////////// SETUP PWM FREQ //////////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_PWM_FREQ
+		// [2] DIP pin
+		// [3] divisior 
+		else if(m_receive_buffer[1] == CMD_PWM_FREQ && m_receive_length>=4){
+			uint8_t divisor = m_receive_buffer[3];
+			m_channel = m_receive_buffer[2];
+			setPwmFrequency(m_channel, divisor);
+		}
+		/////////////////////////////// SETUP PWM FREQ //////////////////////////////
 	}
 
 	#ifdef DEBUG

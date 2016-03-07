@@ -28,6 +28,7 @@ class connection:
 	CMD_GET		= 0xF2
 	CMD_RESET	= 0xF3
 	CMD_DIMM	= 0xF4
+	CMD_PWM_FREQ 	= 0xF5
 
 	MODE_PWM		= 0x01
 	MODE_ANALOG_INPUT	= 0x02
@@ -130,6 +131,41 @@ class connection:
 		time.sleep(self.setup_delay)
 		self.modes[pin]=self.MODE_ANALOG_INPUT
 		return 0
+######################################### PWM frequency ################################################
+	def setup_pwm_freq(self, pin, freq):
+		# timer 0
+		#[2]: 31250, 3906, 488, 122, 30,  // 1,8,64,256,1024 // untested pwm channel p2
+		#[3]: 31250, 3906, 488, 122, 30,  // 1,8,64,256,1024 // untested pwm channel p3
+
+		# timer 1
+		#[1]: 15625, 1953, 244, 61, 15 // 1,2,3,4,5 // untested pwm channel p1
+		#[0]: 15625, 1953, 244, 61, 15 // 1,2,3,4,5 // untested pwm channel p0
+
+		# timer 2
+		#[7]: 15625, 1953, 488, 244, 122, 61, 15 // 1,8,32,64,128,256,1024 // 1,2,3,4,5,6,7 // motor left tested
+		#[9]: 15625, 1953, 488, 244, 122, 61, 15 // 1,8,32,64,128,256,1024 // 1,2,3,4,5,6,7 // motor right tested
+		a_freq = []
+		a_freq.append([15625,1953,244,61,15])
+		a_freq.append([15625,1953,244,61,15])
+		a_freq.append([31250,3906,488,122,30])
+		a_freq.append([31250,3906,488,122,30])
+		a_freq.append([])
+		a_freq.append([])
+		a_freq.append([])
+		a_freq.append([15625,1953,488,244,122,61,15])
+		a_freq.append([])
+		a_freq.append([15625,1953,488,244,122,61,15])
+
+
+		if(pin > len(a_freq) or pin <0):
+			self.warn("pin not available for pwm manipulation")
+			return -1
+		elif(freq in a_freq[pin]):
+			divisor = (a_freq[pin].index(freq))+1
+		else:
+			self.warn("Frequency not available. For this pin the following freq are possible: "+str(a_freq[pin]))
+			return -1
+		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_PWM_FREQ, pin, divisor))
 #######################################################################################################
 ######################################## SETUP #########################################################
 #######################################################################################################
