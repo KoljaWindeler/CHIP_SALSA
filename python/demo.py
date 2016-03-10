@@ -1,23 +1,28 @@
 import arduino_bridge
 import time
 
+print("SALSA DEMO SCRIPT")
+print("")
 salsa = arduino_bridge.connection()
 
 #-----------------------------------------------------------------------------------------#
-print("Lets do a fancy lightshow: Do you have a few ws2812 in a string?\
-This demo will use 24, but it doesn't really matter if you have more or less connected.\
-connect the power to the Vcc pin on the SALSA, GND to GND and the ws2812 Data in pin to P6")
+print("Lets do a fancy lightshow:")
+print("Do you have a few ws2812 in a string? ")
+print("This demo will use 24, but it doesn't really matter if you have")
+print("more or less connected. Connect the power to the Vcc pin on the SALSA")
+print("GND to GND and the ws2812 Data in pin to P6")
 
-in = "a"
-while str.lower(in)!="y" and str.lower(in)!="s"  and str.lower(in)!="o":
-	in = input("Ready? (yes = y, skip = s, use onboard ws2812 = o)")
+usr_in = "a"
+while str.lower(usr_in)!="y" and str.lower(usr_in)!="s"  and str.lower(usr_in)!="o":
+	usr_in = input("Ready? (yes = y, skip = s, use onboard ws2812 = o)")
 
-if str.lower(in)=="y" or str.lower(in)!="o":
+if str.lower(usr_in)=="y" or str.lower(usr_in)=="o":
+	print("running")
 	LC=24
-	ROUNDS=100
+	ROUNDS=40
 	DELAY=0.02
 	pin = 6
-	if str.lower(in)!="o":
+	if str.lower(usr_in)=="o":
 		pin = 7
 
 	salsa.setup_ws2812_unique_color_output(pin,LC)
@@ -35,7 +40,8 @@ if str.lower(in)=="y" or str.lower(in)!="o":
 
 	# send it
 	for ii in range(0,ROUNDS):
-		#print("Round "+str(ii))
+		if(ii%10==0):
+			print("Round "+str(ii)+"/"+str(ROUNDS))
 		for iii in range(0,LC):
 			# set the current array
 			salsa.ws2812set(pin,colorArray)
@@ -52,18 +58,19 @@ if str.lower(in)=="y" or str.lower(in)!="o":
 	print("Neat, right?")
 
 #-----------------------------------------------------------------------------------------#
+print("")
+print("Alright, lets do some dimming with the MOSFETs, connect a few LED's")
+print("or what ever you have handy. Connect their '+' pin to a power supply")
+print("with the required voltage (e.g. 12V). Connect the '-' pin to P0 on the")
+print("SALSA. Also connect the '-' pin of your power supply to the GND pin on")
+print(" the salsa.")
 
-print("Alright, lets do some dimming with the MOSFETs, connect a few LED's or\
-what ever you have handy. Connect their '+' pin to a power supply with the required\
-voltage (e.g. 12V). Connect the '-' pin to P1 on the SALSA. Also connect the '-' pin\
-of your power supply to the GND pin on the salsa.")
+usr_in = "a"
+while str.lower(usr_in)!="y" and str.lower(usr_in)!="s":
+	usr_in = input("Ready? (yes = y, skip = s)")
 
-in = "a"
-while str.lower(in)!="y" and str.lower(in)!="s":
-	in = input("Ready? (yes = y, skip = s)")
-
-if str.lower(in)=="y":
-	pin=1
+if str.lower(usr_in)=="y":
+	pin=0
 	value=100
 	salsa.setup_pwm_output(pin)
 	salsa.setPWM(pin,0)
@@ -76,15 +83,16 @@ if str.lower(in)=="y":
 	print("That was dimming, lets move on")
 
 #-----------------------------------------------------------------------------------------#
+print("")
+print("Next up: Analog reading. Do you have a poti? Connect one end to Vcc")
+print("(lower left corner),the other end goes to gnd. The center pin shall")
+print("be connected to P4!")
 
-print("Next up: Analog reading. Do you have a poti? Connect one end to Vcc (lower left corner),\
-the other end goes to gnd. The center pin shall be connected to P4!")
+usr_in = "a"
+while usr_in!="" and str.lower(usr_in)!="y" and str.lower(usr_in)!="s":
+	usr_in = input("Ready? (yes = y, skip = s)")
 
-in = "a"
-while in!="" and str.lower(in)!="y" and str.lower(in)!="s":
-	in = input("Ready? (yes = y, skip = s)")
-
-if str.lower(in)=="y":
+if str.lower(usr_in)=="y":
 	pin = 4
 	salsa.setup_analog_input(pin)
 	analog_value = salsa.analogRead(pin)
@@ -92,6 +100,6 @@ if str.lower(in)=="y":
 
 #-----------------------------------------------------------------------------------------#
 
-
+print("")
 print("Well, thats about it. There are a few more examples in this directory.")
 print("Happy making! :) JKW")
