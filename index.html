@@ -14,9 +14,18 @@
     <script type="text/javascript" src="javascripts/headsmart.min.js"></script>
     <script type="text/javascript">
       $(document).ready(function () {
-        $('#main_content').headsmart()
+        $('#main_content').headsmart();
+	SyntaxHighlighter.all();
       })
     </script>
+
+
+	<script type="text/javascript" src="scripts/shCore.js"></script>
+	<script type="text/javascript" src="scripts/shBrushBash.js"></script> 
+	<!-- Include *at least* the core style and default theme -->
+	<link href="stylesheets/shCore.css" rel="stylesheet" type="text/css" />
+	<link href="stylesheets/shThemeDefault.css" rel="stylesheet" type="text/css" />
+
     <title>C.h.i.p. SALSA Dip by KoljaWindeler</title>
   </head>
 
@@ -28,7 +37,7 @@
         <span class="ribbon-outer">
           <span class="ribbon-inner">
             <h1>C.h.i.p. SALSA Dip</h1>
-            <h2>a PWM, mosfet / Motordriver board to extend the C.H.I.P.</h2>
+            <h2>a PWM, MOSFET / Motordriver board to extend the C.H.I.P.</h2>
           </span>
           <span class="left-tail"></span>
           <span class="right-tail"></span>
@@ -49,23 +58,28 @@
         <h3>
 <a id="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
 
-<p>This github page is about the SALSA DIP for the C.H.I.P. (a $9 computer developed by NTC).<br>
-The CHIP is a great board, a tiny linux computer that fits on your palm. But it is in the nature of non-realtime OS that certain functionallities are not available. This is where the SALSA kicks in. It provides a co-processor extension for the CHIP that is able to run realtime code and offers multiple hardware functionallities which are not available on the C.H.I.P. itselfts.  The SALSA features a Atmel ATmega 328p-au as used on various other tinker board (e.g. the Arduino).</p>
+<p>This github page is about the SALSA DIP for the C.H.I.P. (a $9 computer developed by NTC). The CHIP is a great board, a tiny linux computer that fits on your palm. But it is in the nature of non-realtime OS that certain functionallities are not available. This is where the SALSA kicks in. It provides a co-processor extension for the CHIP that is able to run realtime code and offers multiple hardware functionallities which are not available on the C.H.I.P. itselfts.  The SALSA features a Atmel ATmega 328p-au as used on various other tinker board (e.g. the Arduino).</p>
 
 <h3>
 <a id="Features" class="anchor" href="#designer-templates" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Features</h3>
-<lo>
-<li>Connected to the CHIP via I2C. Simple Python3 interface can be used to send commands to the SALSA.</li>
-<li>Drive the famouse Ws2812 LED strings
+<ul>
+<li>Connected to the CHIP via I2C, keeps all your CHIP pins available</li>
+<li>Simple Python3 interface can be used to send commands to and retreive values from the SALSA</li>
+<li>Drive some awesome Ws2812 LED strings
 <iframe width="420" height="315" src="https://www.youtube.com/embed/REpHSQ7OU-8" frameborder="0" allowfullscreen></iframe></li>
-<li>Use the four onboard N-MOSFET transistor to drive large strings of 12V/24V LEDs and dimm them via PWM
+<li>Use the four onboard N-MOSFET transistor to drive large strings of simple 12V (up to 36V,7A) LEDs and dimm them via PWM
 <iframe width="560" height="315" src="https://www.youtube.com/embed/PGJFUSGe4sY" frameborder="0" allowfullscreen></iframe></li>
-<li>Analog read on multiple pins</li>
-<li>Use the PWM signals to drive a Servo</li>
-<li>An on-board DCDC regulator that allows to power the SALSA from 7-28V DC and provides stable 5V with up to 3A load to the SALSA and the CHIP. <i>(e.g. run your CHIP in your car)</i></li>
-<li>Seamless power, the SALSA can be powered from the CHIP 5V output, or from the DCDC regulator or from CHIPs battery. This offers an outstanding battery safer option: If you only have limitted power in your Battery, shut the CHIP down! Before you do that, send a wakeup time to the SALSA and the SALSA will reboot the CHIP as soon as that time has pasted! The Salsa can run on a few uA.</li>
-<li> SALSA provides 12 screw-terminals. 6 on the top and 6 on the bottom, making it really easy to connect to your project</li>
-</lo>
+<li>Analog read (0-5V) on three SALSA pins</li>
+<li>Use the six PWM signals to drive e.g. a few servos</li>
+<li>An on-board DCDC regulator that allows to power the SALSA from 7-28V DC and provides stable 5V with up to 3A current to the SALSA and the CHIP. <i>(e.g. run your CHIP on the 12V from your car)</i></li>
+<li>Seamless power, the SALSA can be powered
+<ul><li>from the CHIP 5V output</li>
+<li>from the DCDC regulator</li>
+<li>from CHIPs battery</li></ul> 
+<i>This offers an outstanding battery safer option: If you only have limitted power in your Battery, shut the CHIP down! Before you do that, send a wakeup time to the SALSA and the SALSA will reboot the CHIP as soon as that time has pasted! The Salsa can run on a few uA during wait.</i></li>
+<li>SALSA provides 12 screw-terminals. 6 on the top and 6 on the bottom, making it really easy to connect to your project</li>
+<li>SALSA has an Arduino IDE compatible Bootloader. You can simply upload your Arduino Code on the SALSA, (e.g. distance measuring)</li>
+</ul>
 
 <h3>
 <a id="Motor-version" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Motor-version</h3>
@@ -76,32 +90,32 @@ The CHIP is a great board, a tiny linux computer that fits on your palm. But it 
 
 <h3>
 <a id="install" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to install</h3>
-<lo>
+<ul>
 <li>1. Install the SALSA on top of the CHIP</li>
 <li>2. check if the CHIP can see the SALSA by running <br>
-{% highlight bash %}
-sudo i2cdetect -y 1<br>
-0 1 2 3 4 5 6 7 8 9 a b c d e f<br>
-00: -- 04 -- -- -- -- -- -- -- -- -- -- -- <br>
-10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- <br>
-20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- <br>
-30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- <br>
-40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- <br>
-50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- <br>
-60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- <br>
+<pre class="brush: bash">
+sudo i2cdetect -y 1
+0 1 2 3 4 5 6 7 8 9 a b c d e f
+00: -- 04 -- -- -- -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 70: -- -- -- -- -- -- -- --
-{% endhighlight %}<br>
-If you see the 0x04 (that is the SALSA) go on </li>
+</pre>
+If you see the 0x04 (that is the SALSA I2C adress) go on </li>
 <li>3. Run my autoinstall script<br>
-{% highlight bash %}
-cd ~<br>
-wget https://github.com/KoljaWindeler/CHIP_SALSA/raw/master/install/install.sh<br>
-sudo sh install.sh<br>
-{% endhighlight %}
+<pre class="brush: bash">
+cd ~
+wget https://github.com/KoljaWindeler/CHIP_SALSA/raw/master/install/install.sh
+sudo sh install.sh
+</pre>
 This will take a minute and download all necessary code for you. It will also ask you if you want to run a little demo code.
 </li>
 
-</lo>
+</ul>
 <h3>
 <a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Support or Contact</h3>
 <p>
