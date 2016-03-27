@@ -76,7 +76,7 @@
 <li>SALSA has an Arduino IDE compatible Bootloader. You can simply upload your Arduino Code on the SALSA, (e.g. distance measuring)</li>
 <li>Seamless power, the SALSA can be powered
 <ul><li>from the C.H.I.P. 5V output</li>
-<li>from the DCDC regulator</li>
+<li>from the optional on-board DCDC regulator (mentioned below)</li>
 <li>from C.H.I.P.s battery</li></ul> 
 This offers an outstanding battery safer option: If you only have limited power in your Battery, shut the C.H.I.P. down! Before you do that, send a wakeup time to the SALSA and the SALSA will reboot the C.H.I.P. as soon as that time has pasted! The Salsa can run on a few uA during wait.</li>
 <li>An optional on-board DCDC regulator that allows me to power the SALSA from 7-28V DC and provides stable 5V with up to 3A current to the SALSA and the C.H.I.P.. (e.g. run your C.H.I.P. on the 12V from your car)<br><br>Power is a big issue on the C.H.I.P. most likely the #1 problem on the forum. The reason is that C.H.I.P. draws quite a lot current from the powersuppply (I've measured 350mA at idle, and ~500mA under load with spikes up to 650mA). If your powersupply can't handle those spikes with stable 5V but instead reduce the voltage C.H.I.P. crashes. I've measured the stability on a few of my phone chargers, which claim to be 1A stable. The first provided 4.65V at 350mA, the next 4.7V@350mA and went down to 4.2V when I started a CPU intense task. That when I've decided to add my own DCDC regulator. <br>
