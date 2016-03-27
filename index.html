@@ -62,6 +62,7 @@
 
 <h3>
 <a id="Features" class="anchor" href="#designer-templates" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Features</h3>
+<p>
 <ul>
 <li>Connected to the C.H.I.P. via I2C, keeps all your C.H.I.P. pins untouched</li>
 <li>Simple Python3 interface can be used to send commands to and retrieve values from the SALSA</li>
@@ -77,15 +78,16 @@
 <ul><li>from the C.H.I.P. 5V output</li>
 <li>from the DCDC regulator</li>
 <li>from C.H.I.P.s battery</li></ul> 
-<i>This offers an outstanding battery safer option: If you only have limited power in your Battery, shut the C.H.I.P. down! Before you do that, send a wakeup time to the SALSA and the SALSA will reboot the C.H.I.P. as soon as that time has pasted! The Salsa can run on a few uA during wait.</i></li>
-<li>An optional on-board DCDC regulator that allows me to power the SALSA from 7-28V DC and provides stable 5V with up to 3A current to the SALSA and the C.H.I.P.. <i>(e.g. run your C.H.I.P. on the 12V from your car)</i<br><br>Power is a big issue on the C.H.I.P. most likely the #1 problem on the forum. The reason is that C.H.I.P. draws quite a lot current from the powersuppply (I've measured 350mA at idle, and ~500mA under load with spikes up to 650mA). If your powersupply can't handle those spikes with stable 5V but instead reduce the voltage C.H.I.P. crashes. I've measured the stability on a few of my phone chargers, which claim to be 1A stable. The first provided 4.65V at 350mA, the next 4.7V@350mA and went down to 4.2V when I started a CPU intense task. That when I've decided to add my own DCDC regulator. <br>
+This offers an outstanding battery safer option: If you only have limited power in your Battery, shut the C.H.I.P. down! Before you do that, send a wakeup time to the SALSA and the SALSA will reboot the C.H.I.P. as soon as that time has pasted! The Salsa can run on a few uA during wait.</li>
+<li>An optional on-board DCDC regulator that allows me to power the SALSA from 7-28V DC and provides stable 5V with up to 3A current to the SALSA and the C.H.I.P.. (e.g. run your C.H.I.P. on the 12V from your car)<br><br>Power is a big issue on the C.H.I.P. most likely the #1 problem on the forum. The reason is that C.H.I.P. draws quite a lot current from the powersuppply (I've measured 350mA at idle, and ~500mA under load with spikes up to 650mA). If your powersupply can't handle those spikes with stable 5V but instead reduce the voltage C.H.I.P. crashes. I've measured the stability on a few of my phone chargers, which claim to be 1A stable. The first provided 4.65V at 350mA, the next 4.7V@350mA and went down to 4.2V when I started a CPU intense task. That when I've decided to add my own DCDC regulator. <br>
 <img src="images/p3.JPG" height="292" width="345"><br>This pictures actually shows the QUESO DIP, but it is the same DCDC regulator. 
 At the moment I feed it with an old laptop charger, 80W at 20V give me a lot of backup and the worst I've seen was 4.75V at 1.5A load.</li>
 
 </ul>
+</p>
 
 <h3>
-<a id="Motor-version" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Motor-version</h3>
+<a id="Motor_version" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Motor-version</h3>
 
 <p>The SALSA II can be assembled with a L293DD motordriver <b><u>instead</u></b> of the PWM N-Mosfet. The real neat part is that is can use the PWM channels to drive real smooth curves.<br>
 <img src="images/p4.jpg" height="194" width="345"><br> This transforms the SALSA into a really easy to use robot driving DIP.
