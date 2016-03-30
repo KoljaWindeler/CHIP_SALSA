@@ -29,6 +29,7 @@ class connection:
 	CMD_RESET	= 0xF3
 	CMD_DIMM	= 0xF4
 	CMD_PWM_FREQ 	= 0xF5
+	CMD_TRIGGER_AFTER_SLEEP  = 0xF6
 
 	MODE_PWM		= 0x01
 	MODE_ANALOG_INPUT	= 0x02
@@ -286,6 +287,21 @@ class connection:
 				self.bus.transaction(i2c.writing(self.address,msg))
 				time.sleep(self.delay)
 		return 0
+		#################################### trigger Pin after Sleep ################################################
+		# this shall wake the CHIP up after [sleeptime] seconds have passed by holding the [pin] up [or down if inverse is true]
+		# for [holdtime] seconds, SALSA II connects P8 to the poweron button of the CHIP if the jumper is closed
+		def triggerAfterSleep(self, pin, sleeptime, holdtime, inverse=False):
+			if(holdtime>255):
+				holdtime=255;
+			if(sleeptime>65535):
+				sleeptime = 65535;
+			inverse_bit = 0;
+			if(inverse):
+				inverse_bit = 1;
+			self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_TRIGGER_AFTER_SLEEP, pin, holdtime, inverse_bit, int(sleeptime/256), int(sleeptime%256)))
+			time.sleep(self.delay)
+			return 0
+		
 #######################################################################################################
 ######################################## USAGE ########################################################
 #######################################################################################################

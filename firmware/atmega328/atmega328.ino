@@ -1,4 +1,6 @@
 #include "WS2812.h"	// thanks Matthias Riegler!
+#include "LowPower.h" // thanks LowPowerLab https://github.com/LowPowerLab/LowPower
+
 #include "PINS.h"
 #include <Wire.h>
 
@@ -9,6 +11,7 @@
 #define CMD_RESET		0xF3
 #define CMD_DIMM		0xF4
 #define CMD_PWM_FREQ		0xF5
+#define CMD_TRIGGER_AFTER_SLEEP 0xF6
 
 #define MODE_PWM			0x01
 #define MODE_ANALOG_INPUT		0x02
@@ -460,6 +463,64 @@ void parse(){
 			setPwmFrequency(m_channel, divisor);
 		}
 		/////////////////////////////// SETUP PWM FREQ //////////////////////////////
+		/////////////////////////////// TRIGGER AFTER SLEEP //////////////////////////////
+		// [0] START_BYTE
+		// [1] CMD_TRIGGER_AFTER_SLEEP
+		// [2] Pin to trigger 
+		// [3] hold down length in seconds
+		// [4] low active
+		// [5] sleep SECONDS high byte
+		// [6] sleep SECONDS low byte
+		
+		else if(m_receive_buffer[1] == CMD_TRIGGER_AFTER_SLEEP && m_receive_length>=7){
+			uint16_t sec = m_receive_buffer[5]<<8 || m_receive_buffer[6];
+			uint8_t hold = m_receive_buffer[3];
+			bool inverse = m_receive_buffer[4];
+			m_channel = m_receive_buffer[2];
+			
+			// configure output if not already done
+			if(m_pins[m_channel].m_mode!=MODE_DIGITAL_OUTPUT){
+				if(m_pins[m_channel].is_digital_inout()){
+					// change the level first to avoid peak
+					if(!inverse){
+						digitalWrite(m_pins[m_channel].m_arduino_pin,LOW);
+					} else {
+						digitalWrite(m_pins[m_channel].m_arduino_pin,HIGH);
+					}
+					// set output
+					pinMode(m_pins[m_channel].m_arduino_pin,OUTPUT);
+				}
+			}
+			
+			// here we go, try to stay in that 8sec mode as long as possible
+			while(sec>8){
+				LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);  
+				sec-=8;
+			}
+			// switch to 1 sec
+			while(sec>0){
+				LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF);  
+				sec--;
+			}
+			
+			// push
+			if(!inverse){
+				digitalWrite(m_pins[m_channel].m_arduino_pin,HIGH);
+			} else {
+				digitalWrite(m_pins[m_channel].m_arduino_pin,LOW);
+			}
+			
+			// hold down the pin
+			delay(1000*((uint32_t)hold));
+			
+			// release
+			if(!inverse){
+				digitalWrite(m_pins[m_channel].m_arduino_pin,LOW);
+			} else {
+				digitalWrite(m_pins[m_channel].m_arduino_pin,HIGH);
+			}			
+		}
+		/////////////////////////////// TRIGGER AFTER SLEEP //////////////////////////////
 	}
 
 	#ifdef DEBUG
