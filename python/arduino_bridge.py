@@ -290,15 +290,30 @@ class connection:
 #################################### trigger Pin after Sleep ################################################
 	# this shall wake the CHIP up after [sleeptime] seconds have passed by holding the [pin] up [or down if inverse is true]
 	# for [holdtime] seconds, SALSA II connects P8 to the poweron button of the CHIP if the jumper is closed
-	def triggerAfterSleep(self, pin, sleeptime, holdtime, inverse=False):
-		if(holdtime>255):
-			holdtime=255;
-		if(sleeptime>65535):
-			sleeptime = 65535;
+	# [0] START_BYTE
+	# [1] CMD_TRIGGER_AFTER_SLEEP
+	# [2] Pin to trigger 
+	# [3] hold down length in seconds for the first push
+	# [4] hold down length in seconds for the second push
+	# [5] low active
+	# [6] wait time in sec until first push
+	# [7] sleep SECONDS high byte for 2nd push
+	# [8] sleep SECONDS low byte for 2nd push
+		
+	def triggerAfterSleep(self, pin=8, holdtime_1st=8, holdtime_2nd=2, wait_1st=10, wait_2nd=100, inverse=True):
+		if(holdtime_1st>255):
+			holdtime_1st=255
+		if(holdtime_2nd>255):
+			holdtime_2nd=255
+		if(wait_1st>65535):
+			wait_1st = 65535
+		if(wait_2nd>65535):
+			wait_2nd = 65535
+
 		inverse_bit = 0;
 		if(inverse):
 			inverse_bit = 1;
-		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_TRIGGER_AFTER_SLEEP, pin, holdtime, inverse_bit, int(sleeptime/256), int(sleeptime%256)))
+		self.bus.transaction(i2c.writing_bytes(self.address, self.START_BYTE, self.CMD_TRIGGER_AFTER_SLEEP, pin, holdtime_1st, holdtime_2nd, inverse_bit, int(wait_1st), int(wait_2nd/256), int(wait_2nd%256)))
 		time.sleep(self.delay)
 		return 0
 		

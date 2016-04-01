@@ -467,15 +467,19 @@ void parse(){
 		// [0] START_BYTE
 		// [1] CMD_TRIGGER_AFTER_SLEEP
 		// [2] Pin to trigger 
-		// [3] hold down length in seconds
-		// [4] low active
-		// [5] sleep SECONDS high byte
-		// [6] sleep SECONDS low byte
+		// [3] hold down length in seconds for the first push
+		// [4] hold down length in seconds for the second push
+		// [5] low active
+		// [6] wait time in sec until first push
+		// [7] sleep SECONDS high byte for 2nd push
+		// [8] sleep SECONDS low byte for 2nd push
 		
-		else if(m_receive_buffer[1] == CMD_TRIGGER_AFTER_SLEEP && m_receive_length>=7){
-			uint16_t sec = m_receive_buffer[5]<<8 | m_receive_buffer[6];
-			uint8_t hold = m_receive_buffer[3];
-			bool inverse = m_receive_buffer[4];
+		else if(m_receive_buffer[1] == CMD_TRIGGER_AFTER_SLEEP && m_receive_length>=9){
+			uint16_t wait_2nd = m_receive_buffer[7]<<8 | m_receive_buffer[8];
+			uint8_t wait_1st = m_receive_buffer[6];
+			uint8_t hold_1st = m_receive_buffer[3];
+			uint8_t hold_2nd = m_receive_buffer[4];
+			bool inverse = m_receive_buffer[5];
 			m_channel = m_receive_buffer[2];
 			
 			// configure output if not already done
@@ -487,22 +491,18 @@ void parse(){
 					} else {
 						digitalWrite(m_pins[m_channel].m_arduino_pin,HIGH);
 					}
-					// set output
-					pinMode(m_pins[m_channel].m_arduino_pin,OUTPUT);
+					// set input for now
+					pinMode(m_pins[m_channel].m_arduino_pin,INPUT);
 				}
 			}
 			
-			// here we go, try to stay in that 8sec mode as long as possible
-			while(sec>8){
-				LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);  
-				sec-=8;
+			while(wait_1st>0){
+				delay(1000);
+				wait_1st--;
 			}
-			// switch to 1 sec
-			while(sec>0){
-				LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF);  
-				sec--;
-			}
-			
+
+			// set to output for first push
+			pinMode(m_pins[m_channel].m_arduino_pin,OUTPUT);
 			// push
 			if(!inverse){
 				digitalWrite(m_pins[m_channel].m_arduino_pin,HIGH);
@@ -511,7 +511,40 @@ void parse(){
 			}
 			
 			// hold down the pin
-			delay(1000*((uint32_t)hold));
+			delay(1000*((uint32_t)hold_1st));
+			
+			// release
+			if(!inverse){
+				digitalWrite(m_pins[m_channel].m_arduino_pin,LOW);
+			} else {
+				digitalWrite(m_pins[m_channel].m_arduino_pin,HIGH);
+			}
+			// set back to input for now
+			pinMode(m_pins[m_channel].m_arduino_pin,INPUT);
+
+			// here we go, try to stay in that 8sec mode as long as possible
+			while(wait_2nd>8){
+				LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);  
+				wait_2nd-=8;
+			}
+			// switch to 1 sec
+			while(wait_2nd>0){
+				LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF);  
+				wait_2nd--;
+			}
+			
+
+			// set to output for push
+			pinMode(m_pins[m_channel].m_arduino_pin,OUTPUT);
+			// push
+			if(!inverse){
+				digitalWrite(m_pins[m_channel].m_arduino_pin,HIGH);
+			} else {
+				digitalWrite(m_pins[m_channel].m_arduino_pin,LOW);
+			}
+			
+			// hold down the pin
+			delay(1000*((uint32_t)hold_2nd));
 			
 			// release
 			if(!inverse){
@@ -519,6 +552,8 @@ void parse(){
 			} else {
 				digitalWrite(m_pins[m_channel].m_arduino_pin,HIGH);
 			}			
+			// set back to input for now
+			pinMode(m_pins[m_channel].m_arduino_pin,INPUT);
 		}
 		/////////////////////////////// TRIGGER AFTER SLEEP //////////////////////////////
 	}
