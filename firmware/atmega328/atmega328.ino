@@ -473,7 +473,7 @@ void parse(){
 		// [6] sleep SECONDS low byte
 		
 		else if(m_receive_buffer[1] == CMD_TRIGGER_AFTER_SLEEP && m_receive_length>=7){
-			uint16_t sec = m_receive_buffer[5]<<8 || m_receive_buffer[6];
+			uint16_t sec = m_receive_buffer[5]<<8 | m_receive_buffer[6];
 			uint8_t hold = m_receive_buffer[3];
 			bool inverse = m_receive_buffer[4];
 			m_channel = m_receive_buffer[2];
