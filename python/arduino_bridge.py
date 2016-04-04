@@ -17,6 +17,14 @@ class Color:
 		self.red=red
 		self.green=green
 		self.blue=blue
+	def dimm(self, factor):
+		self.red = int(self.red/factor)
+		self.green = int(self.green/factor)
+		self.blue = int(self.blue/factor)
+	def copy(self, new):
+		self.red = new.red
+		self.green = new.green
+		self.blue = new.blue
 #######################################################################################################
 #######################################################################################################	
 	
