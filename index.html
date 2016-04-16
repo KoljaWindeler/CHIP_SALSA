@@ -97,7 +97,15 @@ At the moment I feed it with an old laptop charger, 80W at 20V give me a lot of 
 <h3>
 <a id="install" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to install the software</h3>
 <ul>
-<li>1. Install the SALSA on top of the C.H.I.P.</li>
+<li>1. Install the SALSA on top of the C.H.I.P. and connect a few ws2812 leds if you have.
+It should look like shown in the pictures below<br>
+<img src="images/a1.JPG" height="292" width="345"><br>
+<br>
+This is the lower end, over C.H.I.P.s wifi module and the battery connector, connect the LEDs here<br>
+<img src="images/a2.JPG" height="292" width="345"><br>
+<br>
+This is the upper end, connect power to the boards here, red is +, black -<br>
+<img src="images/a3.JPG" height="292" width="345"><br></li>
 <li>2. check if the C.H.I.P. can see the SALSA by running <br>
 <pre class="brush: bash">
 sudo i2cdetect -y 1
