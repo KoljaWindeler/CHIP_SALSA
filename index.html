@@ -89,12 +89,14 @@ I've used this capability to build my own personal sunrise<br>
 <li>from C.H.I.P.s battery</li></ul> 
 This offers an outstanding battery safer option: If you only have limited power in your Battery, shut the C.H.I.P. down! Before you do that, send a wakeup time to the SALSA and the SALSA will reboot the C.H.I.P. as soon as that time has passed! The Salsa can run on a few uA during wait. The video below shows how the SALSA is restarting the CHIP, without me touching anything.<br>
 
-<iframe width="420" height="237" src="https://www.youtube.com/embed/kFa4GCv_e3E" frameborder="0" allowfullscreen></iframe>
+<iframe width="420" height="237" src="https://www.youtube.com/embed/kFa4GCv_e3E" frameborder="0" allowfullscreen></iframe><br>
 
  <a href="images/s9.png">more</a></li>
 <li>An optional on-board DCDC regulator that allows me to power the SALSA from 7-28V DC and provides stable 5V with up to 3A current to the SALSA and the C.H.I.P.. (e.g. run your C.H.I.P. on the 12V from your car)<br><br>Power is a big issue on the C.H.I.P. most likely the #1 problem on the forum. The reason is that C.H.I.P. draws quite a lot current from the powersuppply (I've measured 350mA at idle, and ~500mA under load with spikes up to 650mA). If your powersupply can't handle those spikes with stable 5V but instead reduce the voltage C.H.I.P. crashes. I've measured the stability on a few of my phone chargers, which claim to be 1A stable. The first provided 4.65V at 350mA, the next 4.7V@350mA and went down to 4.2V when I started a CPU intense task. That when I've decided to add my own DCDC regulator. <br>
-<img src="images/p3.JPG" height="279" width="420"><br>This pictures actually shows the QUESO DIP, but it is the same DCDC regulator. 
-At the moment I feed it with an old laptop charger, 80W at 20V give me a lot of backup and the worst I've seen was 4.75V at 1.5A load.</li>
+<img src="images/p3.JPG" height="279" width="420"><br>
+<i>This pictures actually shows the QUESO DIP, but it is the same DCDC regulator.</i> 
+<br><br>
+In general every wallplugged charger should work, that has an output between 7-28V and at least 5W (V*A) so typically a 12V charger with 0.75A (= 9W) or an old laptop powersupply (most of them are ~20V and 50-120W) will give you plenty of power. I found a few power supplies that came with old USB harddrives in my closet and gave them a new purpose.</li>
 
 </ul>
 </p>
@@ -126,6 +128,7 @@ This is the lower end, over C.H.I.P.s wifi module and the battery connector, con
 <img src="images/a2.JPG" height="279" width="420"><br>
 <br>
 This is the upper end, connect power to the boards here, red is +, black -<br>
+There is NO POLARITY PROTECTION on the board, so please make sure that connect them in the right way.<br>
 <img src="images/a3.JPG" height="279" width="420"><br></li>
 <li>2. check if the C.H.I.P. can see the SALSA by running <br>
 <pre class="brush: bash">
