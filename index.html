@@ -87,7 +87,11 @@ I've used this capability to build my own personal sunrise<br>
 <ul><li>from the C.H.I.P. 5V output</li>
 <li>from the optional on-board DCDC regulator (mentioned below)</li>
 <li>from C.H.I.P.s battery</li></ul> 
-This offers an outstanding battery safer option: If you only have limited power in your Battery, shut the C.H.I.P. down! Before you do that, send a wakeup time to the SALSA and the SALSA will reboot the C.H.I.P. as soon as that time has passed! The Salsa can run on a few uA during wait.</li>
+This offers an outstanding battery safer option: If you only have limited power in your Battery, shut the C.H.I.P. down! Before you do that, send a wakeup time to the SALSA and the SALSA will reboot the C.H.I.P. as soon as that time has passed! The Salsa can run on a few uA during wait. The video below shows how the SALSA is restarting the CHIP, without me touching anything.<br>
+
+<iframe width="420" height="237" src="https://www.youtube.com/embed/kFa4GCv_e3E" frameborder="0" allowfullscreen></iframe>
+
+ <a href="images/s9.png">more</a></li>
 <li>An optional on-board DCDC regulator that allows me to power the SALSA from 7-28V DC and provides stable 5V with up to 3A current to the SALSA and the C.H.I.P.. (e.g. run your C.H.I.P. on the 12V from your car)<br><br>Power is a big issue on the C.H.I.P. most likely the #1 problem on the forum. The reason is that C.H.I.P. draws quite a lot current from the powersuppply (I've measured 350mA at idle, and ~500mA under load with spikes up to 650mA). If your powersupply can't handle those spikes with stable 5V but instead reduce the voltage C.H.I.P. crashes. I've measured the stability on a few of my phone chargers, which claim to be 1A stable. The first provided 4.65V at 350mA, the next 4.7V@350mA and went down to 4.2V when I started a CPU intense task. That when I've decided to add my own DCDC regulator. <br>
 <img src="images/p3.JPG" height="279" width="420"><br>This pictures actually shows the QUESO DIP, but it is the same DCDC regulator. 
 At the moment I feed it with an old laptop charger, 80W at 20V give me a lot of backup and the worst I've seen was 4.75V at 1.5A load.</li>
@@ -102,6 +106,14 @@ At the moment I feed it with an old laptop charger, 80W at 20V give me a lot of 
 <img src="images/p4.jpg" height="194" width="345"><br> This transforms the SALSA into a really easy to use robot driving DIP.
 <iframe width="420" height="315" src="https://www.youtube.com/embed/pGu1Kf6W818" frameborder="0" allowfullscreen></iframe></p>
 
+<h3>
+<a id="pinout" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Physical connection</h3>
+<ul>
+<li>
+See below for the pinout<br>
+<a href="images/pinout.png"><img src="images/pinout.png" height="279" width="420"></a><br>
+<a href="https://github.com/KoljaWindeler/CHIP_SALSA/blob/master/docs/hdd_all.pdf">more</a></li>
+</ul>
 
 <h3>
 <a id="install" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to install the software</h3>
@@ -145,8 +157,38 @@ Take a look in the directory CHIP_SALSA/python for more demo code and how the co
 <li>digital_write.py</li>	
 <li>ws2812_moving_rainbow.py</li>	
 <li>ws2812_rainbow.py</li>	
+</ul>
 </li>
 </ul>
+
+<h3>
+<a id="arduino" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>How to use salsa within the arduino IDE</h3>
+<ul>
+<li>
+To use the SALSA inside the Arduino IDE add this code block to the boards.txt file (see <a href="http://playground.arduino.cc/Main/CustomizeArduinoIDE">http://playground.arduino.cc/Main/CustomizeArduinoIDE</a>)
+
+<pre class="brush: bash">
+atmega328o.name=[Optiboot] SALSA DIP w/ ATmega328
+atmega328o.upload.protocol=arduino
+atmega328o.upload.maximum_size=32256
+atmega328o.upload.speed=19200 -F
+atmega328o.bootloader.low_fuses=0xe2
+atmega328o.bootloader.high_fuses=0xda
+atmega328o.bootloader.extended_fuses=0x05
+atmega328o.bootloader.path=optiboot
+atmega328o.bootloader.file=optiboot_atmega328.hex
+atmega328o.bootloader.unlock_bits=0x3F
+atmega328o.bootloader.lock_bits=0x0F
+atmega328o.build.mcu=atmega328p
+atmega328o.build.f_cpu=8000000L
+atmega328o.build.core=arduino:arduino
+atmega328o.build.variant=arduino:standard
+</pre>
+</li>
+<li>Restart the arduino IDE and select Boards -> Salsa</li>
+<li>You'll need a UART to USB cable (5V) to connect to the DIP</li>
+</ul>
+
 <h3>
 <a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Support or Contact</h3>
 <p>
