@@ -67,9 +67,18 @@
 <li>Connected to the C.H.I.P. via I2C, keeps all your C.H.I.P. pins untouched</li>
 <li>Simple Python3 interface can be used to send commands to and retrieve values from the SALSA</li>
 <li>Drive some awesome Ws2812 LED strings
-<iframe width="420" height="315" src="https://www.youtube.com/embed/REpHSQ7OU-8" frameborder="0" allowfullscreen></iframe></li>
+<iframe width="420" height="315" src="https://www.youtube.com/embed/REpHSQ7OU-8" frameborder="0" allowfullscreen></iframe><br> or build your own binary clock<br>
+<img src="images/p5.JPG" height="279" width="420">
+<br> or a soccer score display<br>
+<img src="images/p6.jpg" height="420" width="420"><br>ws2812 led's are awesome :)
+</li>
 <li>Use the four onboard N-MOSFET transistor to drive large strings of simple 12V (up to 36V,7A) LEDs and dimm them via PWM
-<iframe width="420" height="237" src="https://www.youtube.com/embed/PGJFUSGe4sY" frameborder="0" allowfullscreen></iframe></li>
+<iframe width="420" height="237" src="https://www.youtube.com/embed/PGJFUSGe4sY" frameborder="0" allowfullscreen></iframe><br>
+I've used this capability to build my own personal sunrise<br>
+<a href="https://bbs.nextthing.co/t/project-chip-salsa-and-the-sunrise/3436">Forumlink</a><br>
+<img src="images/p7.jpg" height="592" width="333"><br>
+<img src="images/p8.jpg" height="592" width="333">
+</li>
 <li>Analog read (0-5V) on three SALSA pins</li>
 <li>Use the six PWM signals to control e.g. a few servos</li>
 <li>SALSA provides 12 screw-terminals. 6 on the top and 6 on the bottom, making it really easy to connect to your project</li>
@@ -80,7 +89,7 @@
 <li>from C.H.I.P.s battery</li></ul> 
 This offers an outstanding battery safer option: If you only have limited power in your Battery, shut the C.H.I.P. down! Before you do that, send a wakeup time to the SALSA and the SALSA will reboot the C.H.I.P. as soon as that time has passed! The Salsa can run on a few uA during wait.</li>
 <li>An optional on-board DCDC regulator that allows me to power the SALSA from 7-28V DC and provides stable 5V with up to 3A current to the SALSA and the C.H.I.P.. (e.g. run your C.H.I.P. on the 12V from your car)<br><br>Power is a big issue on the C.H.I.P. most likely the #1 problem on the forum. The reason is that C.H.I.P. draws quite a lot current from the powersuppply (I've measured 350mA at idle, and ~500mA under load with spikes up to 650mA). If your powersupply can't handle those spikes with stable 5V but instead reduce the voltage C.H.I.P. crashes. I've measured the stability on a few of my phone chargers, which claim to be 1A stable. The first provided 4.65V at 350mA, the next 4.7V@350mA and went down to 4.2V when I started a CPU intense task. That when I've decided to add my own DCDC regulator. <br>
-<img src="images/p3.JPG" height="292" width="345"><br>This pictures actually shows the QUESO DIP, but it is the same DCDC regulator. 
+<img src="images/p3.JPG" height="279" width="420"><br>This pictures actually shows the QUESO DIP, but it is the same DCDC regulator. 
 At the moment I feed it with an old laptop charger, 80W at 20V give me a lot of backup and the worst I've seen was 4.75V at 1.5A load.</li>
 
 </ul>
@@ -99,13 +108,13 @@ At the moment I feed it with an old laptop charger, 80W at 20V give me a lot of 
 <ul>
 <li>1. Install the SALSA on top of the C.H.I.P. and connect a few ws2812 leds if you have.
 It should look like shown in the pictures below<br>
-<img src="images/a1.JPG" height="292" width="345"><br>
+<img src="images/a1.JPG" height="279" width="420"><br>
 <br>
 This is the lower end, over C.H.I.P.s wifi module and the battery connector, connect the LEDs here<br>
-<img src="images/a2.JPG" height="292" width="345"><br>
+<img src="images/a2.JPG" height="279" width="420"><br>
 <br>
 This is the upper end, connect power to the boards here, red is +, black -<br>
-<img src="images/a3.JPG" height="292" width="345"><br></li>
+<img src="images/a3.JPG" height="279" width="420"><br></li>
 <li>2. check if the C.H.I.P. can see the SALSA by running <br>
 <pre class="brush: bash">
 sudo i2cdetect -y 1
