@@ -1,0 +1,9 @@
+1. install avrdude (apt-get install avrdude)
+2. move it (mv /usr/bin/avrdude /usr/bin/avrdude_org)
+
+3. compile hex file
+4. run avrdude -v -v -v -v -patmega328p -carduino -P/dev/ttyS0 -b19200 -D -Uflash:w:/tmp/atmega328.cpp.hex:i
+
+OR
+
+5. run arduino ide .. 
