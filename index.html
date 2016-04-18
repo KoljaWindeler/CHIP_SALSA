@@ -196,6 +196,20 @@ atmega328o.build.variant=arduino:standard
 </ul>
 
 <h3>
+<a id="self" class="anchor" href="#creating-pages-manually" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Without arduino</h3>
+It is possible to use C.H.I.P.s GPIO/UART pins to programm the SALSA. This is a five step process:
+<ul>
+<li>1. install avrdude on chip (sudo apt-get install avrdude)</li>
+<li>2. move the original avrdude (sudo mv /usr/bin/avrdude /usr/bin/avrdude_org)</li>
+<li>3. add wrapper (sudo cp firmware/avrdude /usr/bin/avrdude)</li>
+<li>4. complete the wiring as shown below:<br>
+<img src="images/avrdude1.jpg" height="420" width="420"><br>
+<img src="images/avrdude2.jpg" height="310" width="420"><br>
+</li>
+<li>5. stop the serial console on the uart port <br>(sudo systemctl stop serial-getty@ttyS0.service)</li></ul>
+Now just use the arduino IDE and flash your firmware :)<br>
+Remember: <u>You have to repeat step 5 after every reboot!</u>
+<h3>
 <a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Support or Contact</h3>
 <p>
 Please post questions about the SALSA in the NTC forum at <a href="https://bbs.nextthing.co/t/salsa-dip-for-c-h-i-p-i2c-arduino-ws2812-pwm-motor">https://bbs.nextthing.co/t/salsa-dip-for-c-h-i-p-i2c-arduino-ws2812-pwm-motor</a>
