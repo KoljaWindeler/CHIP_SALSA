@@ -199,7 +199,7 @@ void config_pin(){
 			
 			WS2812 *ws2812 = new WS2812(m_pins[m_channel].m_ws2812_count);
 			ws2812->setOutput(m_pins[m_channel].m_arduino_pin); 
-			m_pins[m_channel].m_ws2812_pointer=ws2812; // save pointer
+			m_pins[m_channel].assign_ws2812(ws2812); // save pointer
 		};
 	}
 	

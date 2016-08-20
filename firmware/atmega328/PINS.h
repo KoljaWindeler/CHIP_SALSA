@@ -13,6 +13,7 @@ class PIN {
 		bool is_pwm_out();
 		bool is_digital_inout();
 		bool is_ws2812();
+		void assign_ws2812(WS2812* p);
 
 		uint8_t m_arduino_pin=0xff;
 		uint8_t m_mode=0xff;

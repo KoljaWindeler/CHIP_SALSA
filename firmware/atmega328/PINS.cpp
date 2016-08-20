@@ -9,7 +9,15 @@ PIN::PIN(){
 	m_mode = 0xff;
 	m_ws2812_count = 0xff;
 	m_value=0x00;
+	m_ws2812_pointer = null;
 };
+
+void PIN::assign_ws2812(WS2812* p){
+	if(m_ws2812_pointer!=null){
+		free(m_ws2812_pointer);
+	}
+	m_ws2812_pointer = p;
+}
 
 void PIN::set(bool analog_in, bool digital, bool pwm, bool ws2812, uint8_t arduino_pin){
 	m_analog_in = analog_in;
